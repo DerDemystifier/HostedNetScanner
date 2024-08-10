@@ -41,23 +41,23 @@ public class IPConfigScanner {
 		for (String section : sections) {
 			if (section.contains("adapter") && !section.contains("Media disconnected")) {
 				// Extract description/name
-				Pattern descPattern = Pattern.compile("Description[^:]+:\\s*(.+)");
+				Pattern descPattern = Pattern.compile("Description[^:]+:(.+)");
 				Matcher descMatcher = descPattern.matcher(section);
 
 				// Extract Physical Address (MAC)
-				Pattern macPattern = Pattern.compile("Physical Address[^:]+:\\s*(.+)");
+				Pattern macPattern = Pattern.compile("Physical Address[^:]+:(.+)");
 				Matcher macMatcher = macPattern.matcher(section);
 
 				// Extract IPv4 Address
-				Pattern ipPattern = Pattern.compile("IPv4 Address[^:]+:\\s*([^\\(]+)");
+				Pattern ipPattern = Pattern.compile("IPv4 Address[^:]+:([^\\(]+)");
 				Matcher ipMatcher = ipPattern.matcher(section);
 
 				// Extract Subnet Mask
-				Pattern maskPattern = Pattern.compile("Subnet Mask[^:]+:\\s*(.+)");
+				Pattern maskPattern = Pattern.compile("Subnet Mask[^:]+:(.+)");
 				Matcher maskMatcher = maskPattern.matcher(section);
 
 				// Extract Default Gateway
-				Pattern gatewayPattern = Pattern.compile("Default Gateway[^:]+:\\s*(.+)");
+				Pattern gatewayPattern = Pattern.compile("Default Gateway[^:]+:*(.+)");
 				Matcher gatewayMatcher = gatewayPattern.matcher(section);
 
 				if (descMatcher.find() && macMatcher.find() && ipMatcher.find()) {
@@ -74,7 +74,7 @@ public class IPConfigScanner {
 					if (maskMatcher.find()) {
 						subnetMask = maskMatcher.group(1).trim();
 					}
-					
+
 					if (gatewayMatcher.find()) {
 						defaultGateway = gatewayMatcher.group(1).trim();
 					}
