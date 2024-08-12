@@ -4,10 +4,12 @@ import java.util.List;
 
 public class HostedNetwork {
 	public static Network startNetwork() {
-		try {
-			Runtime.getRuntime().exec("netsh wlan start hostednetwork");
-		} catch (Exception e) {
-			e.printStackTrace();
+		if (!isNetworkRunning()) {
+			try {
+				Runtime.getRuntime().exec("netsh wlan start hostednetwork");
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 
 		List<Network> allNetworks = IPConfigScanner.scanNetworks();
@@ -46,5 +48,27 @@ public class HostedNetwork {
 		}
 
 		return null;
+	}
+
+	/**
+	 * Checks if there's a hosted network already running.
+	 *
+	 * @return {@code true} if a hosted network is running, {@code false} otherwise.
+	 */
+	public static boolean isNetworkRunning() {
+		try {
+			Process p = Runtime.getRuntime().exec("netsh wlan show hostednetwork");
+			BufferedReader reader = new BufferedReader(new InputStreamReader(p.getInputStream()));
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.contains("Status")) {
+					return line.split(" : ")[1].trim().equals("Started");
+				}
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+
+		return false;
 	}
 }

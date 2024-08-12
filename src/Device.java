@@ -1,12 +1,14 @@
+import java.text.MessageFormat;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 public class Device {
 	private String hostname;
 	private String customName;
 	private String ipAddress;
 	private String macAddress;
-	private LocalDateTime connectionTime; // timestamp of when the device connected
-	private LocalDateTime lastSeen;
+	private LocalDateTime connectionTime = LocalDateTime.now(); // timestamp of when the device connected
+	private LocalDateTime lastSeen = LocalDateTime.now();;
 	private String status; // connected/disconnected/unconfirmed
 
 	// Constructors
@@ -45,7 +47,8 @@ public class Device {
 	}
 
 	/**
-	 * Formats a MAC address by converting it to uppercase and replacing colons with hyphens.
+	 * Formats a MAC address by converting it to uppercase and replacing colons with
+	 * hyphens.
 	 *
 	 * @param oldMac the original MAC address string
 	 * @return the formatted MAC address string
@@ -68,8 +71,27 @@ public class Device {
 		return connectionTime;
 	}
 
+	public String getFormattedConnectionTime() {
+		// format the connection time to a readable format
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		return connectionTime.format(formatter);
+	}
+
 	public void setConnectionTime(LocalDateTime localDateTime) {
 		this.connectionTime = localDateTime;
+	}
+
+	public LocalDateTime getLastSeen() {
+		return lastSeen;
+	}
+
+	public String getFormattedLastSeen() {
+		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		return lastSeen.format(formatter);
+	}
+
+	public void setLastSeen(LocalDateTime lastSeen) {
+		this.lastSeen = lastSeen;
 	}
 
 	public String getStatus() {
@@ -84,7 +106,21 @@ public class Device {
 
 		this.status = status;
 		if (status.equals("disconnected") || status.equals("unconfirmed")) {
-			this.lastSeen = LocalDateTime.now();
+			this.setLastSeen(LocalDateTime.now());
 		}
+	}
+
+	@Override
+	public String toString() {
+		return MessageFormat.format("""
+				Device [
+				  hostname={0}
+				  customName={1}
+				  ipAddress={2}
+				  macAddress={3}
+				  connectionTime={4}
+				  lastSeen={5}
+				  status={6}
+				]""", hostname, customName, ipAddress, macAddress, connectionTime, lastSeen, status);
 	}
 }
