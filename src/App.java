@@ -1,7 +1,24 @@
+import java.awt.EventQueue;
+
+import javax.swing.UIManager;
 
 public class App {
 	public static void main(String[] args) {
-		System.out.println(HostedNetwork.startNetwork().getDefaultGateway());
+		try {
+			UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
+		} catch (Throwable e) {
+			e.printStackTrace();
+		}
+		EventQueue.invokeLater(new Runnable() {
+			public void run() {
+				try {
+					MainWindow frame = new MainWindow();
+					frame.setVisible(true);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+			}
+		});
 
 		// Check for admin rights
 		// if (!System.getProperty("user.name").equals("Administrator")) {

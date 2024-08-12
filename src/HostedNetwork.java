@@ -1,8 +1,23 @@
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-public class HostedNetwork {
+public class HostedNetwork extends Network {
+	private static HostedNetwork instance;
+
+	private HostedNetwork(Network network) {
+		super(network.getConnectedInterface());
+	}
+
+	public static HostedNetwork getInstance() {
+		return instance;
+	}
+
 	public static Network startNetwork() {
 		if (!isNetworkRunning()) {
 			try {
@@ -12,10 +27,26 @@ public class HostedNetwork {
 			}
 		}
 
+		if (instance != null) {
+			return getInstance();
+		}
+
+		HostedNetwork hnet = findHostedNetworkInstance();
+		if (hnet != null) {
+			hnet.monitorNetwork();
+		}
+
+		return hnet;
+	}
+
+	static HostedNetwork findHostedNetworkInstance() {
 		List<Network> allNetworks = IPConfigScanner.scanNetworks();
 		for (Network network : allNetworks) {
 			if (network.getConnectedInterface().getMacAddress().equals(getHostedNetMac())) {
-				return network;
+				if (instance == null) {
+					instance = new HostedNetwork(network);
+				}
+				return getInstance();
 			}
 		}
 
@@ -70,5 +101,41 @@ public class HostedNetwork {
 		}
 
 		return false;
+	}
+
+	// Parse connected clients from netsh command
+	public Set<Device> getConnectedDevices() throws IOException {
+		Set<Device> devices = new HashSet<>();
+		Process process = Runtime.getRuntime().exec("netsh wlan show hostednetwork");
+
+		try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				Matcher matcher = Pattern.compile("([\\dA-Fa-f:]{17})").matcher(line);
+				if (matcher.find()) {
+					String mac = matcher.group(1);
+					String name = recognizeClient(mac);
+
+					Device connectedDevice = new Device(mac);
+					connectedDevice.setCustomName(name);
+
+					devices.add(connectedDevice);
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return devices;
+	}
+
+	@Override
+	public void monitorNetwork() {
+		try {
+			Set<Device> devices = getConnectedDevices();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 }

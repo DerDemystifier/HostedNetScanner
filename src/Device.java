@@ -1,6 +1,7 @@
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Objects;
 
 public class Device {
 	private String hostname;
@@ -108,6 +109,23 @@ public class Device {
 		if (status.equals("disconnected") || status.equals("unconfirmed")) {
 			this.setLastSeen(LocalDateTime.now());
 		}
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(macAddress);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Device other = (Device) obj;
+		return Objects.equals(macAddress, other.macAddress);
 	}
 
 	@Override

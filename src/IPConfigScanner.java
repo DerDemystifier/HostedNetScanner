@@ -66,7 +66,6 @@ public class IPConfigScanner {
 					String ip = ipMatcher.group(1).trim();
 
 					Device device = new Device(ip, mac);
-					device.setCustomName(rawOutput);
 					device.setStatus("connected");
 
 					String subnetMask = null;
