@@ -34,12 +34,24 @@ public class HostedNetwork extends Network {
 		HostedNetwork hnet = findHostedNetworkInstance();
 		if (hnet != null) {
 			hnet.monitorNetwork();
+		} else {
+			System.out.println("Hosted network not found.");
 		}
 
 		return hnet;
 	}
 
+	/**
+	 * Attempts to find and return an instance of HostedNetwork by scanning available networks.
+	 * The method will make up to 6 attempts, with a 500ms delay between each attempt.
+	 * If a network with a matching MAC address is found, it will return the HostedNetwork instance.
+	 * If the instance does not already exist, it will create a new one.
+	 *
+	 * @return the HostedNetwork instance if found, or null if not found after 6 attempts or if interrupted.
+	 */
 	static HostedNetwork findHostedNetworkInstance() {
+		int attempts = 6;
+		while (attempts > 0) {
 		List<Network> allNetworks = IPConfigScanner.scanNetworks();
 		for (Network network : allNetworks) {
 			if (network.getConnectedInterface().getMacAddress().equals(getHostedNetMac())) {
@@ -48,6 +60,16 @@ public class HostedNetwork extends Network {
 				}
 				return getInstance();
 			}
+			}
+
+			try {
+				Thread.sleep(500);
+			} catch (InterruptedException e) {
+				Thread.currentThread().interrupt();
+				return null;
+			}
+
+			attempts--;
 		}
 
 		return null;
