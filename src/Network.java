@@ -1,13 +1,36 @@
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class Network {
 	private Device connectedInterface;
 	private String subnetMask;
 	private String defaultGateway;
-	private List<Device> activeDevices = new ArrayList<>();
-//	private List<StatusListener> statusListener;
+	private Set<Device> activeDevices = new HashSet<>();
+	private List<NetworkUpdateListener> listeners = new ArrayList<>();
+
+	public void addNetworkUpdateListener(NetworkUpdateListener listener) {
+		listeners.add(listener);
+	}
+
+	private void notifyListeners(Set<Device> devices) {
+		for (NetworkUpdateListener listener : listeners) {
+			listener.onNetworkUpdated(devices);
+		}
+	}
+
+	private static final String KNOWN_PEERS_FILE = System.getProperty("user.dir") + "/knownPeers.txt";
+	private static final String STATUS_FILE = System.getProperty("user.dir") + "/networkStatus.txt";
 
 	public Network(Device connectedInterface) {
 		super();
@@ -38,19 +61,17 @@ public class Network {
 		this.defaultGateway = defaultGateway;
 	}
 
-	public List<Device> getActiveDevices() {
+	public Set<Device> getActiveDevices() {
 		return activeDevices;
 	}
 
-	public List<Device> addActiveDevice(Device device) {
+	public Set<Device> addActiveDevice(Device device) {
 		activeDevices.add(device);
 		return activeDevices;
 	}
 
-	public void update(Network net) {
-		// Update network configuration
-		this.subnetMask = net.getSubnetMask();
-		this.defaultGateway = net.getDefaultGateway();
+	public void updateConnectedDevices(Set<Device> newDevices) {
+		boolean networkModified = false;
 
 		// Mark existing devices as offline if not in new network
 		for (Device existingDevice : this.activeDevices) {
@@ -58,7 +79,7 @@ public class Network {
 				continue;
 
 			boolean deviceFound = false;
-			for (Device newDevice : net.getActiveDevices()) {
+			for (Device newDevice : newDevices) {
 				if (existingDevice.equals(newDevice)) {
 					deviceFound = true;
 					break;
@@ -66,11 +87,12 @@ public class Network {
 			}
 			if (!deviceFound) {
 				existingDevice.setStatus("unconfirmed");
+				networkModified = true;
 			}
 		}
 
 		// Add new devices
-		for (Device newDevice : net.getActiveDevices()) {
+		for (Device newDevice : newDevices) {
 			boolean deviceExists = false;
 			for (Device existingDevice : this.activeDevices) {
 				if (newDevice.equals(existingDevice)) {
@@ -81,12 +103,21 @@ public class Network {
 			if (!deviceExists) {
 				newDevice.setStatus("connected");
 				this.activeDevices.add(newDevice);
+
+				networkModified = true;
 			}
+		}
+
+		if (networkModified) {
+			notifyListeners(this.getActiveDevices());
 		}
 
 		// Remove offline devices
 		// this.activeDevices.removeIf(device -> !device.isOnline());
 	}
+
+	public void monitorNetwork() {
+	};
 
 	@Override
 	public int hashCode() {

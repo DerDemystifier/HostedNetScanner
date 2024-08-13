@@ -2,6 +2,7 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.Set;
 
 import javax.swing.JFrame;
 import javax.swing.JMenu;
@@ -19,16 +20,34 @@ public class MainWindow extends JFrame {
 	private JTable table;
 	private JMenuItem mntmStartNetwork;
 
+	private NetworkUpdateListener refreshTableListener = new NetworkUpdateListener() {
+		@Override
+		public void onNetworkUpdated(Set<Device> activeDevices) {
+			DefaultTableModel model = (DefaultTableModel) table.getModel();
+			model.setRowCount(0);
+			for (Device device : activeDevices) {
+				model.addRow(new Object[] { device.getStatus(), device.getHostname(), device.getCustomName(),
+						device.getMacAddress(), device.getIpAddress(), device.getFormattedConnectionTime(),
+						device.getFormattedLastSeen() });
+			}
+		}
+	};
+
 	/**
 	 * Create the frame.
 	 */
 	public MainWindow() {
 		initializeComponents();
 
+		HostedNetwork hnet = null;
+
 		if (HostedNetwork.isNetworkRunning()) {
-			HostedNetwork.findHostedNetworkInstance().monitorNetwork();
+			hnet = HostedNetwork.findHostedNetworkInstance();
+			hnet.monitorNetwork();
 			mntmStartNetwork.setEnabled(false);
+			hnet.addNetworkUpdateListener(refreshTableListener);
 		}
+
 	}
 
 	void initializeComponents() {
@@ -56,23 +75,9 @@ public class MainWindow extends JFrame {
 		mntmStartNetwork = new JMenuItem("Start Hosted Network");
 		mntmStartNetwork.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Network network = HostedNetwork.startNetwork();
-				System.out.println(network);
+				Network hnet = HostedNetwork.startNetwork();
 
-				if (network != null) {
-					mntmStartNetwork.setEnabled(false);
-					// fill table with connected devices
-
-					DefaultTableModel model = (DefaultTableModel) table.getModel();
-					model.setRowCount(0);
-					for (Device device : network.getActiveDevices()) {
-						System.out.println(device);
-						model.addRow(new Object[] { device.getStatus(), device.getHostname(), device.getCustomName(),
-								device.getMacAddress(), device.getIpAddress(), device.getFormattedConnectionTime(),
-								device.getFormattedLastSeen() });
-					}
-
-				}
+				hnet.addNetworkUpdateListener(refreshTableListener);
 			}
 		});
 		mnServer.add(mntmStartNetwork);
