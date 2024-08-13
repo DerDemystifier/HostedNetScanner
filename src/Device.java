@@ -1,3 +1,4 @@
+import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -6,7 +7,7 @@ import java.util.Objects;
 public class Device {
 	private String hostname;
 	private String customName;
-	private String ipAddress;
+	private InetAddress ipAddress;
 	private String macAddress;
 	private LocalDateTime connectionTime = LocalDateTime.now(); // timestamp of when the device connected
 	private LocalDateTime lastSeen = LocalDateTime.now();;
@@ -18,7 +19,7 @@ public class Device {
 		this.setConnectionTime(LocalDateTime.now());
 	}
 
-	public Device(String ipAddress, String macAddress) {
+	public Device(InetAddress ipAddress, String macAddress) {
 		this.ipAddress = ipAddress;
 		this.macAddress = macAddress;
 	}
@@ -39,11 +40,11 @@ public class Device {
 		this.customName = customName;
 	}
 
-	public String getIpAddress() {
+	public InetAddress getIpAddress() {
 		return ipAddress;
 	}
 
-	public void setIpAddress(String ipAddress) {
+	public void setIpAddress(InetAddress ipAddress) {
 		this.ipAddress = ipAddress;
 	}
 
