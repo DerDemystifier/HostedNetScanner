@@ -12,16 +12,26 @@ public class Device {
 	private LocalDateTime connectionTime = LocalDateTime.now(); // timestamp of when the device connected
 	private LocalDateTime lastSeen = LocalDateTime.now();;
 	private String status; // connected/disconnected/unconfirmed
+	private Network network; // Network this device interface belongs to
 
 	// Constructors
+	public Device(InetAddress ipAddress) {
+		this(ipAddress, ARPScanner.getMacAddress(ipAddress));
+	}
+
 	public Device(String macAddress) {
-		this.setMacAddress(macAddress);
-		this.setConnectionTime(LocalDateTime.now());
+		this(null, macAddress);
 	}
 
 	public Device(InetAddress ipAddress, String macAddress) {
 		this.ipAddress = ipAddress;
 		this.macAddress = macAddress;
+		this.setConnectionTime(LocalDateTime.now());
+	}
+
+	public Device(InetAddress ipAddress, String macAddress, Network network) {
+		this(ipAddress, macAddress);
+		this.setNetwork(network);
 	}
 
 	public String getHostname() {
@@ -110,6 +120,14 @@ public class Device {
 		if (status.equals("disconnected") || status.equals("unconfirmed")) {
 			this.setLastSeen(LocalDateTime.now());
 		}
+	}
+
+	public Network getNetwork() {
+		return network;
+	}
+
+	public void setNetwork(Network network) {
+		this.network = network;
 	}
 
 	@Override
