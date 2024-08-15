@@ -4,6 +4,9 @@ import java.io.InputStreamReader;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -42,24 +45,31 @@ public class HostedNetwork extends Network {
 	}
 
 	/**
-	 * Attempts to find and return an instance of HostedNetwork by scanning available networks.
-	 * The method will make up to 6 attempts, with a 500ms delay between each attempt.
-	 * If a network with a matching MAC address is found, it will return the HostedNetwork instance.
-	 * If the instance does not already exist, it will create a new one.
+	 * Attempts to find and return an instance of HostedNetwork by scanning
+	 * available networks. The method will make up to 6 attempts, with a 500ms delay
+	 * between each attempt. If a network with a matching MAC address is found, it
+	 * will return the HostedNetwork instance. If the instance does not already
+	 * exist, it will instatiate a new one.
 	 *
-	 * @return the HostedNetwork instance if found, or null if not found after 6 attempts or if interrupted.
+	 * @return the HostedNetwork instance if found, or null if not found after 6
+	 *         attempts or if interrupted.
 	 */
 	static HostedNetwork findHostedNetworkInstance() {
 		int attempts = 6;
 		while (attempts > 0) {
-		List<Network> allNetworks = IPConfigScanner.scanNetworks();
-		for (Network network : allNetworks) {
-			if (network.getConnectedInterface().getMacAddress().equals(getHostedNetMac())) {
-				if (instance == null) {
-					instance = new HostedNetwork(network);
+			// Scan all networks
+			List<Network> allNetworks = IPConfigScanner.scanNetworks();
+
+			for (Network network : allNetworks) {
+				if (network.getConnectedInterface().getMacAddress().equals(getHostedNetMac())) {
+					// If the network's MAC address (from IPConfig) matches the hosted network's MAC
+					// address
+
+					if (instance == null) {
+						instance = new HostedNetwork(network);
+					}
+					return getInstance();
 				}
-				return getInstance();
-			}
 			}
 
 			try {
@@ -151,13 +161,27 @@ public class HostedNetwork extends Network {
 		return devices;
 	}
 
+	/**
+	 * Monitors the network by periodically checking for connected devices.
+	 * This method schedules a task to run at a fixed rate of every 2 seconds.
+	 * The task retrieves the currently connected devices and updates the internal state.
+	 *
+	 * <p>Note: This method uses a single-threaded scheduled executor service to perform the monitoring task.</p>
+	 *
+	 * @throws IOException if an I/O error occurs while retrieving connected devices.
+	 */
 	@Override
 	public void monitorNetwork() {
-		try {
-			Set<Device> devices = getConnectedDevices();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+		executor.scheduleAtFixedRate(() -> {
+			try {
+				System.out.println("Monitoring ....");
+				Set<Device> devices = getConnectedDevices();
+				this.updateConnectedDevices(devices);
+
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}, 0, 2, TimeUnit.SECONDS);
 	}
 }
