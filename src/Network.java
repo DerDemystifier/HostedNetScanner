@@ -16,7 +16,7 @@ public class Network {
 	private Device connectedInterface;
 	private String subnetMask;
 	private String defaultGateway;
-	private Set<Device> activeDevices = new HashSet<>();
+	private Set<Device> knownDevices = new HashSet<>();
 	private List<NetworkUpdateListener> listeners = new ArrayList<>();
 
 	public void addNetworkUpdateListener(NetworkUpdateListener listener) {
@@ -61,55 +61,41 @@ public class Network {
 		this.defaultGateway = defaultGateway;
 	}
 
-	public Set<Device> getActiveDevices() {
-		return activeDevices;
+	public Set<Device> getKnownDevices() {
+		return knownDevices;
 	}
 
-	public Set<Device> addActiveDevice(Device device) {
-		activeDevices.add(device);
-		return activeDevices;
+	public Set<Device> addDevice(Device device) {
+		knownDevices.add(device);
+		return knownDevices;
 	}
 
 	public void updateConnectedDevices(Set<Device> newDevices) {
-		boolean networkModified = false;
+		boolean networkModified = true;
 
 		// Mark existing devices as offline if not in new network
-		for (Device existingDevice : this.activeDevices) {
+		for (Device existingDevice : this.getKnownDevices()) {
 			if (existingDevice.equals(this.connectedInterface))
 				continue;
 
-			boolean deviceFound = false;
-			for (Device newDevice : newDevices) {
-				if (existingDevice.equals(newDevice)) {
-					deviceFound = true;
-					break;
-				}
-			}
-			if (!deviceFound) {
+			if (!newDevices.contains(existingDevice)) {
 				existingDevice.setStatus("unconfirmed");
+				newDevices.add(existingDevice); // Add the missing device, marked as missing
+
 				networkModified = true;
 			}
 		}
 
-		// Add new devices
-		for (Device newDevice : newDevices) {
-			boolean deviceExists = false;
-			for (Device existingDevice : this.activeDevices) {
-				if (newDevice.equals(existingDevice)) {
-					deviceExists = true;
-					break;
-				}
-			}
-			if (!deviceExists) {
-				newDevice.setStatus("connected");
-				this.activeDevices.add(newDevice);
-
+		long onlineDevices = this.getKnownDevices().stream().filter(device -> "connected".equals(device.getStatus()))
+				.count();
+		if (newDevices.size() != onlineDevices) {
+			// If there are new devices not currently on active Devices
 				networkModified = true;
-			}
 		}
 
 		if (networkModified) {
-			notifyListeners(this.getActiveDevices());
+			this.knownDevices = newDevices;
+			notifyListeners(this.getKnownDevices());
 		}
 
 		// Remove offline devices

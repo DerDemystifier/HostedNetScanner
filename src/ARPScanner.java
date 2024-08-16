@@ -95,7 +95,7 @@ public class ARPScanner {
 								&& macAddress.matches("([0-9a-fA-F]{2}[-:]){5}[0-9a-fA-F]{2}")) {
 
 							Device device = new Device(ipAddress, macAddress, currentNetwork);
-							currentNetwork.addActiveDevice(device);
+							currentNetwork.addDevice(device);
 						}
 					} catch (UnknownHostException e) {
 						e.printStackTrace();
@@ -159,7 +159,7 @@ public class ARPScanner {
 	}
 
 	public static String getMacAddress(InetAddress ipAddress) {
-		return scanAll().stream().map(Network::getActiveDevices).flatMap(Set::stream)
+		return scanAll().stream().map(Network::getKnownDevices).flatMap(Set::stream)
 				.filter(device -> device.getIpAddress().equals(ipAddress)).findFirst().map(Device::getMacAddress)
 				.orElse(null);
 	}

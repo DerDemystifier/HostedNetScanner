@@ -3,6 +3,9 @@ import java.text.MessageFormat;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Device {
 	private String hostname;
@@ -11,16 +14,12 @@ public class Device {
 	private String macAddress;
 	private LocalDateTime connectionTime = LocalDateTime.now(); // timestamp of when the device connected
 	private LocalDateTime lastSeen = LocalDateTime.now();;
-	private String status; // connected/disconnected/unconfirmed
+	private String status = "connected"; // connected/disconnected/unconfirmed
 	private Network network; // Network this device interface belongs to
 
 	// Constructors
 	public Device(InetAddress ipAddress) {
 		this(ipAddress, ARPScanner.getMacAddress(ipAddress));
-	}
-
-	public Device(String macAddress) {
-		this(null, macAddress);
 	}
 
 	public Device(InetAddress ipAddress, String macAddress) {
@@ -52,6 +51,12 @@ public class Device {
 
 	public InetAddress getIpAddress() {
 		return ipAddress;
+	}
+
+	public String getHostAddress() {
+		if (this.getIpAddress() != null)
+			return this.getIpAddress().getHostAddress();
+		return "-.-.-.-";
 	}
 
 	public void setIpAddress(InetAddress ipAddress) {

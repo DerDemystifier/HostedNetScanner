@@ -25,7 +25,7 @@ public class IPConfigScanner {
 				Network network = new Network(connectedInterface);
 				network.setSubnetMask(entry.subnetMask);
 				network.setDefaultGateway(entry.defaultGateway);
-				network.addActiveDevice(connectedInterface);
+				network.addDevice(connectedInterface);
 				networks.add(network);
 			}
 
