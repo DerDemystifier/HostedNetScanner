@@ -88,7 +88,7 @@ public class ARPScanner {
 				if (parts.length >= 3) {
 					try {
 						InetAddress ipAddress = InetAddress.getByName(parts[0]);
-						String macAddress = parts[1];
+						String macAddress = Device.formatMacAddress(parts[1]);
 						String type = parts[2];
 
 						if (type.equals("dynamic") && ipAddress.getHostAddress().matches("\\d+\\.\\d+\\.\\d+\\.\\d+")
@@ -120,7 +120,7 @@ public class ARPScanner {
 				while (matcher.find()) {
 					try {
 						InetAddress ipAddress = InetAddress.getByName(matcher.group(1));
-						String macAddress = matcher.group(2);
+						String macAddress = Device.formatMacAddress(matcher.group(2));
 						devices.add(new Device(ipAddress, macAddress));
 					} catch (Exception e) {
 						e.printStackTrace();

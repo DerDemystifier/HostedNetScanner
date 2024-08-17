@@ -20,14 +20,18 @@ public class MainWindow extends JFrame {
 	private JTable table;
 	private JMenuItem mntmStartNetwork;
 
+	/**
+	 * Listener that updates the table with the active devices on the network. This
+	 * listener is triggered when the network is updated.
+	 */
 	private NetworkUpdateListener refreshTableListener = new NetworkUpdateListener() {
 		@Override
-		public void onNetworkUpdated(Set<Device> activeDevices) {
+		public void onNetworkUpdated(Set<Device> knownDevices) {
 			DefaultTableModel model = (DefaultTableModel) table.getModel();
 			model.setRowCount(0);
-			for (Device device : activeDevices) {
+			for (Device device : knownDevices) {
 				model.addRow(new Object[] { device.getStatus(), device.getHostname(), device.getCustomName(),
-						device.getMacAddress(), device.getIpAddress(), device.getFormattedConnectionTime(),
+						device.getMacAddress(), device.getHostAddress(), device.getFormattedConnectionTime(),
 						device.getFormattedLastSeen() });
 			}
 		}
@@ -42,12 +46,13 @@ public class MainWindow extends JFrame {
 		HostedNetwork hnet = null;
 
 		if (HostedNetwork.isNetworkRunning()) {
+			// If the network is already running, get the HostedNetwork instance
+
 			hnet = HostedNetwork.findHostedNetworkInstance();
 			hnet.monitorNetwork();
 			mntmStartNetwork.setEnabled(false);
 			hnet.addNetworkUpdateListener(refreshTableListener);
 		}
-
 	}
 
 	void initializeComponents() {

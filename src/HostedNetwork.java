@@ -145,10 +145,16 @@ public class HostedNetwork extends Network {
 			while ((line = reader.readLine()) != null) {
 				Matcher matcher = Pattern.compile("([\\dA-Fa-f:]{17})").matcher(line);
 				if (matcher.find()) {
-					String mac = matcher.group(1);
+					String mac = Device.formatMacAddress(matcher.group(1));
 					String name = recognizeClient(mac);
+					InetAddress ipAddr;
+					if (this.getConnectedInterface().getMacAddress().equals(mac)) {
+						ipAddr = this.getConnectedInterface().getIpAddress();
+					} else {
+						ipAddr = ARPScanner.getIpAddress(this, mac);
+					}
 
-					Device connectedDevice = new Device(mac);
+					Device connectedDevice = new Device(ipAddr, mac);
 					connectedDevice.setCustomName(name);
 
 					devices.add(connectedDevice);

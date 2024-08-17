@@ -11,6 +11,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 public class Network {
 	private Device connectedInterface;
@@ -71,14 +74,14 @@ public class Network {
 	}
 
 	public void updateConnectedDevices(Set<Device> newDevices) {
-		boolean networkModified = true;
+		boolean networkModified = false;
 
 		// Mark existing devices as offline if not in new network
 		for (Device existingDevice : this.getKnownDevices()) {
 			if (existingDevice.equals(this.connectedInterface))
 				continue;
 
-			if (!newDevices.contains(existingDevice)) {
+			if (!newDevices.contains(existingDevice) && existingDevice.getStatus() != "unconfirmed") {
 				existingDevice.setStatus("unconfirmed");
 				newDevices.add(existingDevice); // Add the missing device, marked as missing
 
@@ -94,6 +97,34 @@ public class Network {
 		}
 
 		if (networkModified) {
+			System.out.println("WILL MODIFY NETWORK");
+			// carry out .connectionTime from knownDevices to newDevices
+			for (Device newDevice : newDevices) {
+				for (Device knownDevice : this.getKnownDevices()) {
+					if (newDevice.equals(knownDevice)) {
+						if (knownDevice.getHostname() != null) {
+							newDevice.setHostname(knownDevice.getHostname());
+							System.out.println("KNOWN HOSTNAME");
+						}
+						newDevice.setConnectionTime(knownDevice.getConnectionTime());
+						break;
+					}
+				}
+			}
+
+			for (Device newDevice : newDevices) {
+				if (newDevice.getHostname() == null) {
+					System.out.println("Will try to find hostname");
+					ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+					executor.schedule(() -> {
+						String hostName = newDevice.getIpAddress().getHostName();
+						System.out.println("FOUND" + newDevice.getIpAddress().getHostName());
+						newDevice.setHostname(hostName);
+						notifyListeners(this.getKnownDevices());
+					}, 1, TimeUnit.SECONDS);
+				}
+			}
+
 			this.knownDevices = newDevices;
 			notifyListeners(this.getKnownDevices());
 		}
@@ -130,7 +161,7 @@ public class Network {
 		sb.append("  subnetMask: ").append(subnetMask).append(",\n");
 		sb.append("  defaultGateway: ").append(defaultGateway).append(",\n");
 		sb.append("  activeDevices: [\n");
-		for (Device device : activeDevices) {
+		for (Device device : knownDevices) {
 			sb.append("    ").append(device).append(",\n");
 		}
 		sb.append("  ]\n");

@@ -64,7 +64,7 @@ public class IPConfigScanner {
 
 				if (descMatcher.find() && macMatcher.find() && ipMatcher.find()) {
 					String description = descMatcher.group(1).trim();
-					String mac = macMatcher.group(1).trim();
+					String mac = Device.formatMacAddress(macMatcher.group(1).trim());
 					String ip = ipMatcher.group(1).trim();
 					InetAddress ipAddress = null;
 					try {
@@ -85,7 +85,6 @@ public class IPConfigScanner {
 					if (gatewayMatcher.find()) {
 						defaultGateway = gatewayMatcher.group(1).trim();
 					}
-					System.out.println(defaultGateway);
 
 					ipConfigEntries.add(new IPConfigEntry(device, subnetMask, defaultGateway));
 				}
