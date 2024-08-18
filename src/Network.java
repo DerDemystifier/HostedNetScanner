@@ -11,9 +11,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 public class Network {
 	private Device connectedInterface;
@@ -26,7 +23,7 @@ public class Network {
 		listeners.add(listener);
 	}
 
-	private void notifyListeners(Set<Device> devices) {
+	public void notifyListeners(Set<Device> devices) {
 		for (NetworkUpdateListener listener : listeners) {
 			listener.onNetworkUpdated(devices);
 		}
@@ -64,6 +61,10 @@ public class Network {
 		this.defaultGateway = defaultGateway;
 	}
 
+	public void setKnownDevices(Set<Device> knownDevices) {
+		this.knownDevices = knownDevices;
+	}
+
 	public Set<Device> getKnownDevices() {
 		return knownDevices;
 	}
@@ -73,19 +74,13 @@ public class Network {
 		return knownDevices;
 	}
 
-	public void updateConnectedDevices(Set<Device> newDevices) {
-		boolean networkModified = false;
+	public void updateConnectedDevices() {
 
-		// Mark existing devices as offline if not in new network
-		for (Device existingDevice : this.getKnownDevices()) {
-			if (existingDevice.equals(this.connectedInterface))
-				continue;
+	}
 
-			if (!newDevices.contains(existingDevice) && existingDevice.getStatus() != "unconfirmed") {
-				existingDevice.setStatus("unconfirmed");
-				newDevices.add(existingDevice); // Add the missing device, marked as missing
+	public void monitorNetwork() {
+	};
 
-				networkModified = true;
 			}
 		}
 

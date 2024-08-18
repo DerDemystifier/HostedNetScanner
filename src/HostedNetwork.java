@@ -1,6 +1,7 @@
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetAddress;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -9,6 +10,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class HostedNetwork extends Network {
 	private static HostedNetwork instance;
@@ -167,27 +169,95 @@ public class HostedNetwork extends Network {
 		return devices;
 	}
 
+	@Override
+	public void updateConnectedDevices() {
+		Set<Device> connectedDevices = null;
+		try {
+			connectedDevices = getConnectedDevices();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		Set<Device> reachableDevices = null;
+		if (this.getKnownDevices().size() < 2) {
+			// If there are less than 2 known devices, use the connected devices as reachable
+			// This is because PSDeviceScanner takes times to start up, so I don't want the initial scan to take too long
+			reachableDevices = connectedDevices;
+		} else {
+			try {
+				reachableDevices = new PSDeviceScanner().getReachableDevices();
+			} catch (IOException e) {
+				System.err.println("Error executing PowerShell command: " + e.getMessage());
+			}
+		}
+
+		boolean networkModified = false;
+
+		// Mark existing devices as offline if not in new network
+		for (Device existingDevice : this.getKnownDevices()) {
+			if (existingDevice.equals(this.getConnectedInterface()))
+				continue;
+
+			String newStatus;
+			if (connectedDevices.contains(existingDevice) && reachableDevices.contains(existingDevice)) {
+				newStatus = "online";
+			} else if (connectedDevices.contains(existingDevice) && !reachableDevices.contains(existingDevice)
+					|| !connectedDevices.contains(existingDevice) && reachableDevices.contains(existingDevice)) {
+				newStatus = "unconfirmed";
+			} else {
+				newStatus = "offline";
+			}
+
+			if (newStatus != existingDevice.getStatus()) {
+				existingDevice.setStatus(newStatus);
+				networkModified = true;
+			}
+		}
+
+		Set<Device> newDevices = connectedDevices.stream().filter(device -> !this.getKnownDevices().contains(device))
+				.collect(Collectors.toSet());
+		if (!newDevices.isEmpty()) {
+			// If there are new devices not currently on known Devices
+			this.getKnownDevices().addAll(newDevices);
+			networkModified = true;
+		}
+
+		if (networkModified) {
+			for (Device newDevice : newDevices) {
+				if (newDevice.getHostname() == null) {
+					System.out.println("Will try to find hostname");
+					ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
+					executor.schedule(() -> {
+						String hostName = newDevice.getIpAddress().getHostName();
+						System.out.println("FOUND" + newDevice.getIpAddress().getHostName());
+						newDevice.setHostname(hostName);
+						notifyListeners(this.getKnownDevices());
+					}, 1, TimeUnit.SECONDS);
+				}
+			}
+
+			notifyListeners(this.getKnownDevices());
+		}
+	}
+
 	/**
-	 * Monitors the network by periodically checking for connected devices.
-	 * This method schedules a task to run at a fixed rate of every 2 seconds.
-	 * The task retrieves the currently connected devices and updates the internal state.
+	 * Monitors the network by periodically checking for connected devices. This
+	 * method schedules a task to run at a fixed rate of every 2 seconds. The task
+	 * retrieves the currently connected devices and updates the internal state.
 	 *
-	 * <p>Note: This method uses a single-threaded scheduled executor service to perform the monitoring task.</p>
+	 * <p>
+	 * Note: This method uses a single-threaded scheduled executor service to
+	 * perform the monitoring task.
+	 * </p>
 	 *
-	 * @throws IOException if an I/O error occurs while retrieving connected devices.
+	 * @throws IOException if an I/O error occurs while retrieving connected
+	 *                     devices.
 	 */
 	@Override
 	public void monitorNetwork() {
 		ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 		executor.scheduleAtFixedRate(() -> {
-			try {
-				System.out.println("Monitoring ....");
-				Set<Device> devices = getConnectedDevices();
-				this.updateConnectedDevices(devices);
-
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
+			this.updateConnectedDevices();
 		}, 0, 2, TimeUnit.SECONDS);
 	}
 }
