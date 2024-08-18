@@ -11,16 +11,80 @@ import java.util.Scanner;
 import java.util.Set;
 
 public class PSDeviceScanner {
-	private PersistentPowerShell psInstance;
 
-	private PersistentPowerShell getPSInstance() throws IOException {
-		if (psInstance == null)
-			return new PersistentPowerShell();
-		else
-			return psInstance;
+	private static Process powerShellProcess;
+	private static BufferedWriter writer;
+	private static BufferedReader reader;
+	private static boolean initialized = false;
+
+	public PSDeviceScanner() throws IOException {
+		initialize();
 	}
 
-	public static String executePowerShellScript() {
+	private static synchronized void initialize() throws IOException {
+		if (!initialized) {
+			ProcessBuilder processBuilder = new ProcessBuilder("powershell.exe", "-NoExit", "-Command", "-");
+			processBuilder.redirectErrorStream(true);
+
+			powerShellProcess = processBuilder.start();
+
+			writer = new BufferedWriter(
+					new OutputStreamWriter(powerShellProcess.getOutputStream(), StandardCharsets.UTF_8));
+			reader = new BufferedReader(
+					new InputStreamReader(powerShellProcess.getInputStream(), StandardCharsets.UTF_8));
+			initialized = true;
+		}
+	}
+
+	public String executePowerShellScript(String ps_script) {
+		try {
+			// Write the script to PowerShell's stdin
+			writer.write(ps_script);
+			writer.newLine();
+			writer.flush();
+			writer.write("Write-Output \"EndOfScript\"\n");
+			writer.flush();
+
+			// Read the output from PowerShell's stdout
+			StringBuilder output = new StringBuilder();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.equals("EndOfScript")) {
+					break;
+				}
+				output.append(line).append(System.lineSeparator());
+			}
+			return output.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return "Exception occurred: " + e.getMessage();
+		}
+	}
+
+	public String executePowerShellCommand(String command) {
+		try {
+			writer.write(command);
+			writer.newLine();
+			writer.flush();
+			writer.write("Write-Output \"EndOfScript\"\n");
+			writer.flush();
+
+			StringBuilder output = new StringBuilder();
+			String line;
+			while ((line = reader.readLine()) != null) {
+				if (line.equals("EndOfScript")) {
+					break;
+				}
+				output.append(line).append(System.lineSeparator());
+			}
+			return output.toString();
+		} catch (IOException e) {
+			e.printStackTrace();
+			return "Exception occurred: " + e.getMessage();
+		}
+	}
+
+	public Set<Device> getReachableDevices() throws IOException {
 		String ps_script = """
 				try {
 				    # Get network adapter information
@@ -54,55 +118,10 @@ public class PSDeviceScanner {
 				}
 				""";
 
-		ProcessBuilder processBuilder = new ProcessBuilder("powershell.exe", "-Command", "-");
-
-		// Set up the process environment
-		processBuilder.redirectErrorStream(true); // Merge error and output streams
-
-		Process process = null;
-		try {
-			process = processBuilder.start();
-
-			// Write the script to PowerShell's stdin
-			try (BufferedWriter writer = new BufferedWriter(
-					new OutputStreamWriter(process.getOutputStream(), StandardCharsets.UTF_8))) {
-				writer.write(ps_script);
-				writer.newLine();
-				writer.flush();
-			}
-
-			// Read the output from PowerShell's stdout
-			StringBuilder output = new StringBuilder();
-			try (BufferedReader reader = new BufferedReader(
-					new InputStreamReader(process.getInputStream(), StandardCharsets.UTF_8))) {
-				String line;
-				while ((line = reader.readLine()) != null) {
-					output.append(line).append(System.lineSeparator());
-				}
-			}
-
-			// Wait for the process to finish
-			int exitCode = process.waitFor();
-			if (exitCode != 0) {
-				return "PowerShell script execution failed with exit code: " + exitCode;
-			}
-
-			return output.toString();
-		} catch (IOException | InterruptedException e) {
-			e.printStackTrace();
-			return "Exception occurred: " + e.getMessage();
-		} finally {
-			if (process != null) {
-				process.destroy();
-			}
-		}
-	}
-
-	public static Set<Device> getReachableDevices() throws IOException {
 		Set<Device> reachableDevices = new HashSet<>();
 
 		// Read the output of the command
-		Scanner reader = new Scanner(executePowerShellScript());
+		Scanner reader = new Scanner(executePowerShellScript(ps_script));
 		String line;
 		String ipAddress = null;
 		String macAddress = null;
@@ -133,4 +152,22 @@ public class PSDeviceScanner {
 
 		return reachableDevices;
 	}
+
+	public static void close() {
+		try {
+			if (writer != null) {
+				writer.close();
+			}
+			if (reader != null) {
+				reader.close();
+			}
+			if (powerShellProcess != null) {
+				powerShellProcess.destroy();
+			}
+			initialized = false;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
 }

@@ -40,7 +40,7 @@ public class MainWindow extends JFrame {
 				// Convert status to appropriate icon
 				ImageIcon statusIcon;
 				switch (device.getStatus().toLowerCase()) {
-				case "connected":
+				case "online":
 					statusIcon = statusGreen;
 					break;
 				case "unconfirmed":
@@ -143,8 +143,8 @@ public class MainWindow extends JFrame {
 		table.getColumnModel().getColumn(2).setResizable(false);
 		table.getColumnModel().getColumn(3).setResizable(false);
 		table.getColumnModel().getColumn(4).setResizable(false);
-		table.getColumnModel().getColumn(4).setMinWidth(120);
-		table.getColumnModel().getColumn(4).setMaxWidth(120);
+		table.getColumnModel().getColumn(4).setMinWidth(130);
+		table.getColumnModel().getColumn(4).setMaxWidth(130);
 		table.getColumnModel().getColumn(5).setResizable(false);
 		table.getColumnModel().getColumn(6).setResizable(false);
 		scrollPane.setViewportView(table);

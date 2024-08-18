@@ -10,8 +10,8 @@ public class Device {
 	private InetAddress ipAddress;
 	private String macAddress;
 	private LocalDateTime connectionTime = LocalDateTime.now(); // timestamp of when the device connected
-	private LocalDateTime lastSeen = LocalDateTime.now();;
-	private String status = "connected"; // connected/disconnected/unconfirmed
+	private LocalDateTime lastSeen = LocalDateTime.now(); // Remove extra semicolon
+	private String status = "online"; // online/offline/unconfirmed
 	private Network network; // Network this device interface belongs to
 
 	// Constructors
@@ -78,7 +78,10 @@ public class Device {
 	}
 
 	public void setMacAddress(String macAddress) {
-		this.macAddress = macAddress;
+		if (macAddress == null || !macAddress.matches("^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$")) {
+			throw new IllegalArgumentException("Invalid MAC address format");
+		}
+		this.macAddress = formatMacAddress(macAddress);
 	}
 
 	public LocalDateTime getConnectionTime() {
@@ -114,12 +117,12 @@ public class Device {
 
 	public void setStatus(String status) {
 		// Verify status is valid
-		if (!status.equals("connected") && !status.equals("disconnected") && !status.equals("unconfirmed")) {
+		if (!status.equals("online") && !status.equals("offline") && !status.equals("unconfirmed")) {
 			throw new IllegalArgumentException("Invalid status: " + status);
 		}
 
 		this.status = status;
-		if (status.equals("disconnected") || status.equals("unconfirmed")) {
+		if (status.equals("offline") || status.equals("unconfirmed")) {
 			this.setLastSeen(LocalDateTime.now());
 		}
 	}
@@ -130,6 +133,10 @@ public class Device {
 
 	public void setNetwork(Network network) {
 		this.network = network;
+	}
+
+	public boolean isConnected() {
+		return "online".equals(this.status);
 	}
 
 	@Override

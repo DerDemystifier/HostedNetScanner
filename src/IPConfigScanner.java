@@ -74,7 +74,7 @@ public class IPConfigScanner {
 					}
 
 					Device device = new Device(ipAddress, mac);
-					device.setStatus("connected");
+					device.setStatus("online");
 
 					String subnetMask = null;
 					String defaultGateway = null;
