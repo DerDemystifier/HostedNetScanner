@@ -1,3 +1,4 @@
+package hostednetscanner;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -81,55 +82,77 @@ public class Network {
 	public void monitorNetwork() {
 	};
 
-			}
-		}
-
-		long onlineDevices = this.getKnownDevices().stream().filter(device -> "connected".equals(device.getStatus()))
-				.count();
-		if (newDevices.size() != onlineDevices) {
-			// If there are new devices not currently on active Devices
-				networkModified = true;
-		}
-
-		if (networkModified) {
-			System.out.println("WILL MODIFY NETWORK");
-			// carry out .connectionTime from knownDevices to newDevices
-			for (Device newDevice : newDevices) {
-				for (Device knownDevice : this.getKnownDevices()) {
-					if (newDevice.equals(knownDevice)) {
-						if (knownDevice.getHostname() != null) {
-							newDevice.setHostname(knownDevice.getHostname());
-							System.out.println("KNOWN HOSTNAME");
-						}
-						newDevice.setConnectionTime(knownDevice.getConnectionTime());
-						break;
-					}
-				}
-			}
-
-			for (Device newDevice : newDevices) {
-				if (newDevice.getHostname() == null) {
-					System.out.println("Will try to find hostname");
-					ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-					executor.schedule(() -> {
-						String hostName = newDevice.getIpAddress().getHostName();
-						System.out.println("FOUND" + newDevice.getIpAddress().getHostName());
-						newDevice.setHostname(hostName);
-						notifyListeners(this.getKnownDevices());
-					}, 1, TimeUnit.SECONDS);
-				}
-			}
-
-			this.knownDevices = newDevices;
-			notifyListeners(this.getKnownDevices());
-		}
-
-		// Remove offline devices
-		// this.activeDevices.removeIf(device -> !device.isOnline());
+	// Resolve MAC to a name (placeholder implementation)
+	public static String resolveMac(String mac) {
+		return "UnknownClient_" + mac.substring(mac.length() - 4); // Example resolution
 	}
 
-	public void monitorNetwork() {
-	};
+	// Load known peers from file
+	private static Map<String, String> loadKnownPeers() throws IOException {
+		Map<String, String> knownPeers = new HashMap<>();
+		File file = new File(KNOWN_PEERS_FILE);
+		if (!file.exists())
+			return knownPeers;
+
+		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				String[] parts = line.split("-");
+				if (parts.length == 2) {
+					knownPeers.put(parts[0].trim(), parts[1].trim());
+				}
+			}
+		}
+		return knownPeers;
+	}
+
+	// Recognize client by MAC; resolve if unknown and save to knownPeers.txt
+	public static String recognizeClient(String mac) throws IOException {
+		Map<String, String> knownPeers = loadKnownPeers();
+		if (knownPeers.containsKey(mac)) {
+			return knownPeers.get(mac);
+		} else {
+			String clientName = resolveMac(mac);
+			knownPeers.put(mac, clientName);
+			saveKnownPeers(knownPeers);
+			return clientName;
+		}
+	}
+
+	// Save known peers to file
+	private static void saveKnownPeers(Map<String, String> knownPeers) throws IOException {
+		try (BufferedWriter writer = new BufferedWriter(new FileWriter(KNOWN_PEERS_FILE))) {
+			for (Map.Entry<String, String> entry : knownPeers.entrySet()) {
+				writer.write(entry.getKey() + "-" + entry.getValue());
+				writer.newLine();
+			}
+		}
+	}
+
+	// Save status of connected and disconnected clients to a file
+//	private static void saveStatus(List<Device> connectedDevices) throws IOException {
+//		Set<String> connectedMacs = new HashSet<>();
+//		for (Device device : connectedDevices) {
+//			connectedMacs.add(device.getMac());
+//		}
+//
+//		try (BufferedWriter writer = new BufferedWriter(new FileWriter(STATUS_FILE))) {
+//			// Save connected clients
+//			writer.write("Connected (" + connectedDevices.size() + "):\n");
+//			for (Client client : connectedDevices) {
+//				writer.write(client.toString() + "\n");
+//			}
+//
+//			// Save disconnected clients
+//			writer.write("\nDisconnected (" + (allMacs.size() - connectedDevices.size()) + "):\n");
+//			for (String mac : allMacs) {
+//				if (!connectedMacs.contains(mac)) {
+//					String name = recognizeClient(mac); // Fetch the name if previously recognized
+//					writer.write(name + " (" + mac + ")\n");
+//				}
+//			}
+//		}
+//	}
 
 	@Override
 	public int hashCode() {

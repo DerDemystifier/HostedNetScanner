@@ -1,3 +1,5 @@
+package hostednetscanner;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -56,7 +58,7 @@ public class HostedNetwork extends Network {
 	 * @return the HostedNetwork instance if found, or null if not found after 6
 	 *         attempts or if interrupted.
 	 */
-	static HostedNetwork findHostedNetworkInstance() {
+	public static HostedNetwork findHostedNetworkInstance() {
 		int attempts = 6;
 		while (attempts > 0) {
 			// Scan all networks
@@ -180,8 +182,10 @@ public class HostedNetwork extends Network {
 
 		Set<Device> reachableDevices = null;
 		if (this.getKnownDevices().size() < 2) {
-			// If there are less than 2 known devices, use the connected devices as reachable
-			// This is because PSDeviceScanner takes times to start up, so I don't want the initial scan to take too long
+			// If there are less than 2 known devices, use the connected devices as
+			// reachable
+			// This is because PSDeviceScanner takes times to start up, so I don't want the
+			// initial scan to take too long
 			reachableDevices = connectedDevices;
 		} else {
 			try {

@@ -1,7 +1,14 @@
+package HostedNetScannerUI;
+
 import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Set;
 
 import javax.swing.Icon;
@@ -16,11 +23,18 @@ import javax.swing.JTable;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
+import hostednetscanner.ConfigManager;
+import hostednetscanner.Device;
+import hostednetscanner.HostedNetwork;
+import hostednetscanner.Network;
+import hostednetscanner.NetworkUpdateListener;
+
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTable table;
 	private JMenuItem mntmStartNetwork;
+	private ConfigManager config = new ConfigManager();
 
 	// Add status icons
 	private final ImageIcon statusGreen = new ImageIcon("images/green16.png");
@@ -33,7 +47,7 @@ public class MainWindow extends JFrame {
 	 */
 	private NetworkUpdateListener refreshTableListener = new NetworkUpdateListener() {
 		@Override
-		public void onNetworkUpdated(Set<Device> knownDevices) {
+		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
 			DefaultTableModel model = (DefaultTableModel) table.getModel();
 			model.setRowCount(0);
 			for (Device device : knownDevices) {
@@ -61,6 +75,38 @@ public class MainWindow extends JFrame {
 	};
 
 	/**
+	 * Listener that updates the table with the active devices on the network. This
+	 * listener is triggered when the network is updated.
+	 */
+	private NetworkUpdateListener saveDevicesLog = new NetworkUpdateListener() {
+		@Override
+		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
+			String logPath = config.getDeviceLogFilePath();
+			if (logPath == null || logPath.isEmpty()) {
+				return;
+			}
+
+			try (BufferedWriter writer = new BufferedWriter(new FileWriter(logPath, false))) {
+				LocalDateTime now = LocalDateTime.now();
+				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+				for (Device device : knownDevices) {
+					// Format: timestamp,hostname,customName,ip,mac,status,connectionTime,lastSeen
+					String line = String.format("%s,%s,%s,%s,%s,%s,%s,%s%n", now.format(formatter),
+							device.getHostname() != null ? device.getHostname() : "",
+							device.getCustomName() != null ? device.getCustomName() : "", device.getHostAddress(),
+							device.getMacAddress(), device.getStatus(), device.getFormattedConnectionTime(),
+							device.getFormattedLastSeen());
+					writer.write(line);
+				}
+				writer.flush();
+			} catch (IOException e) {
+				System.err.println("Error writing to device log file: " + e.getMessage());
+			}
+		}
+	};
+
+	/**
 	 * Create the frame.
 	 */
 	public MainWindow() {
@@ -75,6 +121,7 @@ public class MainWindow extends JFrame {
 			hnet.monitorNetwork();
 			mntmStartNetwork.setEnabled(false);
 			hnet.addNetworkUpdateListener(refreshTableListener);
+			hnet.addNetworkUpdateListener(saveDevicesLog);
 		}
 	}
 
@@ -149,5 +196,4 @@ public class MainWindow extends JFrame {
 		table.getColumnModel().getColumn(6).setResizable(false);
 		scrollPane.setViewportView(table);
 	}
-
 }

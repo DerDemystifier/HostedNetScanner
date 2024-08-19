@@ -1,3 +1,4 @@
+package hostednetscanner;
 import java.util.Set;
 
 public interface NetworkUpdateListener {

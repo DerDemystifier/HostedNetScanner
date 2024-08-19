@@ -1,3 +1,4 @@
+package hostednetscanner;
 import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
