@@ -90,18 +90,30 @@ public class MainWindow extends JFrame {
 				LocalDateTime now = LocalDateTime.now();
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-				for (Device device : knownDevices) {
-					// Format: timestamp,hostname,customName,ip,mac,status,connectionTime,lastSeen
-					String line = String.format("%s,%s,%s,%s,%s,%s,%s,%s%n", now.format(formatter),
-							device.getHostname() != null ? device.getHostname() : "",
-							device.getCustomName() != null ? device.getCustomName() : "", device.getHostAddress(),
-							device.getMacAddress(), device.getStatus(), device.getFormattedConnectionTime(),
-							device.getFormattedLastSeen());
-					writer.write(line);
-				}
+				// First write online devices
+				writer.write("Online devices:\n");
+				knownDevices.stream().filter(d -> "online".equals(d.getStatus()))
+						.forEach(device -> writeDeviceLog(writer, now.format(formatter), device));
+
+				// Then write offline/unconfirmed devices
+				writer.write("\nOffline/Unconfirmed devices:\n");
+				knownDevices.stream().filter(d -> !"online".equals(d.getStatus()))
+						.forEach(device -> writeDeviceLog(writer, now.format(formatter), device));
+
 				writer.flush();
 			} catch (IOException e) {
 				System.err.println("Error writing to device log file: " + e.getMessage());
+			}
+		}
+
+		private void writeDeviceLog(BufferedWriter writer, String timestamp, Device device) {
+			try {
+				String line = String.format("%s\n%18s_%15s_%s%n", timestamp, device.getMacAddress(),
+						device.getHostAddress(),
+						device.getCustomName() != null ? device.getCustomName() : device.getHostname());
+				writer.write(line);
+			} catch (IOException e) {
+				System.err.println("Error writing device entry: " + e.getMessage());
 			}
 		}
 	};
