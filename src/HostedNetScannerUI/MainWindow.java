@@ -156,7 +156,7 @@ public class MainWindow extends JFrame {
 		});
 		mnFile.add(mntmQuit);
 
-		JMenu mnServer = new JMenu("Server");
+		JMenu mnServer = new JMenu("Options");
 		menuBar.add(mnServer);
 
 		mntmStartNetwork = new JMenuItem("Start Hosted Network");
@@ -167,6 +167,14 @@ public class MainWindow extends JFrame {
 				hnet.addNetworkUpdateListener(refreshTableListener);
 			}
 		});
+
+		JMenuItem mntmConfigManager = new JMenuItem("Open Config");
+		mntmConfigManager.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new ConfigWindow();
+			}
+		});
+		mnServer.add(mntmConfigManager);
 		mnServer.add(mntmStartNetwork);
 
 		JMenu mnHelp = new JMenu("Help");
