@@ -9,6 +9,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 public class ConfigManager {
 	// Config saved in Computer\HKEY_USERS\S-1-5-21-ID\SOFTWARE\JavaSoft\Prefs
 	private static final String deviceLogFilePath = "device_log_file_path";
+	private static final String knownDevicesFilePath = "known_devices_file_path";
 	private Preferences prefs;
 
 	public ConfigManager() {
@@ -22,13 +23,21 @@ public class ConfigManager {
 
 	public String getDeviceLogFilePath() {
 		// Provide a default value if the key doesn't exist
-		return prefs.get(deviceLogFilePath, ""); // "" no default value
+		return prefs.get(deviceLogFilePath, System.getProperty("user.dir") + "/devicesStatus.txt");
+	}
+
+	public void saveKnownDevicesFilePath(String key) {
+		prefs.put(knownDevicesFilePath, key);
+	}
+
+	public String getKnownDevicesFilePath() {
+		return prefs.get(knownDevicesFilePath, System.getProperty("user.dir") + "/knownDevices.txt");
 	}
 
 	/**
 	 * Opens a save dialog and returns the full path of the selected file.
-	 * 
-	 * 
+	 *
+	 *
 	 * <pre>
 	 * // Example usage:
 	 * File savedFilePath = showSaveDialog(null, // Parent component (can be null)
@@ -46,7 +55,7 @@ public class ConfigManager {
 	 * 	JOptionPane.showMessageDialog(null, "Save operation cancelled.");
 	 * }
 	 * </pre>
-	 * 
+	 *
 	 * @param parentComponent   The parent component for the dialog (can be null).
 	 * @param dialogTitle       The title to display on the save dialog.
 	 * @param approveButtonText The text to display on the "Save" button.
@@ -58,7 +67,7 @@ public class ConfigManager {
 	 *                          "log"}).
 	 * @param defaultFileName   The initially suggested file name (can be null).
 	 * @return The selected file if the user approves, otherwise null.
-	 * 
+	 *
 	 */
 	public static File showSaveDialog(java.awt.Component parentComponent, String dialogTitle, String approveButtonText,
 			String initialDirectory, String fileDescription, String[] fileExtensions, String defaultFileName) {
