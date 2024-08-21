@@ -4,11 +4,16 @@ import java.awt.BorderLayout;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Set;
 
 import javax.swing.Icon;
@@ -91,14 +96,18 @@ public class MainWindow extends JFrame {
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
 				// First write online devices
-				writer.write("Online devices:\n");
+				writer.write(now.format(formatter));
+				writer.newLine();
+				writer.write("Online devices:");
+				writer.newLine();
 				knownDevices.stream().filter(d -> "online".equals(d.getStatus()))
-						.forEach(device -> writeDeviceLog(writer, now.format(formatter), device));
+						.forEach(device -> writeDeviceLog(writer, device));
 
 				// Then write offline/unconfirmed devices
-				writer.write("\nOffline/Unconfirmed devices:\n");
+				writer.write("\nOffline/Unconfirmed devices:");
+				writer.newLine();
 				knownDevices.stream().filter(d -> !"online".equals(d.getStatus()))
-						.forEach(device -> writeDeviceLog(writer, now.format(formatter), device));
+						.forEach(device -> writeDeviceLog(writer, device));
 
 				writer.flush();
 			} catch (IOException e) {
@@ -106,15 +115,93 @@ public class MainWindow extends JFrame {
 			}
 		}
 
-		private void writeDeviceLog(BufferedWriter writer, String timestamp, Device device) {
+		private void writeDeviceLog(BufferedWriter writer, Device device) {
 			try {
-				String line = String.format("%s\n%18s_%15s_%s%n", timestamp, device.getMacAddress(),
-						device.getHostAddress(),
+				String line = String.format("%-17s||%-15s||%s", device.getMacAddress(), device.getHostAddress(),
 						device.getCustomName() != null ? device.getCustomName() : device.getHostname());
 				writer.write(line);
+				writer.newLine();
 			} catch (IOException e) {
 				System.err.println("Error writing device entry: " + e.getMessage());
 			}
+		}
+	};
+
+	/**
+	 * Listener that updates the table with the active devices on the network. This
+	 * listener is triggered when the network is updated.
+	 */
+	private NetworkUpdateListener saveKnownDevices = new NetworkUpdateListener() {
+		private Map<String, String> savedDevices;
+
+		@Override
+		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
+			saveKnownDevices(knownDevices);
+		}
+
+		/**
+		 * Loads known devices from the specified file.
+		 *
+		 * @return a map of MAC addresses to custom names.
+		 */
+		public Map<String, String> loadKnownDevices() {
+			Map<String, String> knownDevices = new HashMap<>();
+			String filePath = config.getKnownDevicesFilePath();
+			File file = new File(filePath);
+			if (!file.exists()) {
+				return knownDevices;
+			}
+
+			try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+				String line;
+				while ((line = reader.readLine()) != null) {
+					String[] parts = line.split("||");
+					if (parts.length >= 2) {
+						String mac = parts[0].trim();
+						String customName = parts[1].trim();
+						knownDevices.put(mac, customName);
+					}
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+
+			return knownDevices;
+		}
+
+		/**
+		 * Saves known devices to the specified file if there are changes.
+		 *
+		 * @param devices the set of current known devices.
+		 */
+		public void saveKnownDevices(Set<Device> devices) {
+			Map<String, String> currentDevices = new HashMap<>();
+			for (Device device : devices) {
+				currentDevices.put(device.getMacAddress(), device.getCustomName());
+			}
+
+			Map<String, String> knownDevices;
+			if (savedDevices == null) {
+				knownDevices = loadKnownDevices();
+			} else {
+				knownDevices = savedDevices;
+			}
+
+			System.out.println(knownDevices);
+
+			if (!currentDevices.equals(knownDevices)) {
+				String filePath = config.getKnownDevicesFilePath();
+				try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
+					for (Map.Entry<String, String> entry : currentDevices.entrySet()) {
+						writer.write(entry.getKey() + "||" + entry.getValue());
+						writer.newLine();
+					}
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+
+			savedDevices = currentDevices;
 		}
 	};
 
@@ -123,17 +210,20 @@ public class MainWindow extends JFrame {
 	 */
 	public MainWindow() {
 		initializeComponents();
+		initializeHostedNetwork();
 
-		HostedNetwork hnet = null;
+	}
 
+	void initializeHostedNetwork() {
 		if (HostedNetwork.isNetworkRunning()) {
 			// If the network is already running, get the HostedNetwork instance
 
-			hnet = HostedNetwork.findHostedNetworkInstance();
+			HostedNetwork hnet = HostedNetwork.findHostedNetworkInstance();
 			hnet.monitorNetwork();
 			mntmStartNetwork.setEnabled(false);
 			hnet.addNetworkUpdateListener(refreshTableListener);
 			hnet.addNetworkUpdateListener(saveDevicesLog);
+			hnet.addNetworkUpdateListener(saveKnownDevices);
 		}
 	}
 
@@ -164,7 +254,7 @@ public class MainWindow extends JFrame {
 			public void actionPerformed(ActionEvent e) {
 				Network hnet = HostedNetwork.startNetwork();
 
-				hnet.addNetworkUpdateListener(refreshTableListener);
+				initializeHostedNetwork();
 			}
 		});
 

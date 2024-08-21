@@ -18,7 +18,6 @@ public class ConfigWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
 	private JPanel contentPane;
 	private JTextField tfDevicesLog;
-	private JTextField textField_1;
 	private JTextField tfKnownDevices;
 	private ConfigManager config = new ConfigManager();
 
@@ -72,22 +71,9 @@ public class ConfigWindow extends JFrame {
 		contentPane.add(btnDevicesLog);
 		contentPane.add(lblNewLabel_1);
 
-		textField_1 = new JTextField();
-		textField_1.setBounds(149, 35, 408, 25);
-		contentPane.add(textField_1);
-		textField_1.setColumns(10);
-
-		JButton btnNewButton_1 = new JButton("Change Location");
-		btnNewButton_1.setBounds(569, 35, 152, 25);
-		contentPane.add(btnNewButton_1);
-
-		JLabel lblKnownDevices = new JLabel("Known Devices Data Location :");
-		lblKnownDevices.setBounds(8, 65, 170, 25);
-		contentPane.add(lblKnownDevices);
-
 		tfKnownDevices = new JTextField(config.getKnownDevicesFilePath());
 		tfKnownDevices.setEditable(false);
-		tfKnownDevices.setBounds(180, 65, 408, 25);
+		tfKnownDevices.setBounds(149, 34, 408, 25);
 		tfKnownDevices.setColumns(10);
 		contentPane.add(tfKnownDevices);
 
@@ -95,8 +81,7 @@ public class ConfigWindow extends JFrame {
 		btnKnownDevicesLog.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				File path = ConfigManager.showSaveDialog(ConfigWindow.this, "Choose save location", "Log file path",
-						System.getProperty("user.dir"), "Text Docs", new String[] { "txt", "log" },
-						"knownDevices.txt");
+						System.getProperty("user.dir"), "Text Docs", new String[] { "txt", "log" }, "knownDevices.txt");
 
 				if (path != null) {
 					config.saveKnownDevicesFilePath(path.getAbsolutePath());
@@ -104,7 +89,7 @@ public class ConfigWindow extends JFrame {
 				}
 			}
 		});
-		btnKnownDevicesLog.setBounds(600, 65, 152, 25);
+		btnKnownDevicesLog.setBounds(569, 34, 152, 25);
 		contentPane.add(btnKnownDevicesLog);
 
 		setVisible(true);

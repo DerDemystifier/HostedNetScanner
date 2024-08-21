@@ -1,14 +1,13 @@
 package hostednetscanner;
+
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -18,17 +17,7 @@ public class Network {
 	private String subnetMask;
 	private String defaultGateway;
 	private Set<Device> knownDevices = new HashSet<>();
-	private List<NetworkUpdateListener> listeners = new ArrayList<>();
-
-	public void addNetworkUpdateListener(NetworkUpdateListener listener) {
-		listeners.add(listener);
-	}
-
-	public void notifyListeners(Set<Device> devices) {
-		for (NetworkUpdateListener listener : listeners) {
-			listener.onNetworkUpdated(devices);
-		}
-	}
+	private Set<NetworkUpdateListener> listeners = new HashSet<>();
 
 	private static final String KNOWN_PEERS_FILE = System.getProperty("user.dir") + "/knownPeers.txt";
 	private static final String STATUS_FILE = System.getProperty("user.dir") + "/networkStatus.txt";
@@ -153,6 +142,35 @@ public class Network {
 //			}
 //		}
 //	}
+
+	/**
+	 * Registers a new NetworkUpdateListener.
+	 *
+	 * @param listener the listener to register.
+	 */
+	public void addNetworkUpdateListener(NetworkUpdateListener listener) {
+		listeners.add(listener);
+	}
+
+	/**
+	 * Removes a NetworkUpdateListener.
+	 *
+	 * @param listener the listener to remove.
+	 */
+	public void removeNetworkUpdateListener(NetworkUpdateListener listener) {
+		listeners.remove(listener);
+	}
+
+	/**
+	 * Notifies all registered listeners with the current known devices.
+	 *
+	 * @param devices the set of known devices to pass to listeners.
+	 */
+	public void notifyListeners(Set<Device> devices) {
+		for (NetworkUpdateListener listener : listeners) {
+			listener.onNetworkUpdated(devices);
+		}
+	}
 
 	@Override
 	public int hashCode() {
