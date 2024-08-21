@@ -15,6 +15,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -155,7 +156,7 @@ public class MainWindow extends JFrame {
 			try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 				String line;
 				while ((line = reader.readLine()) != null) {
-					String[] parts = line.split("||");
+					String[] parts = line.split(Pattern.quote("||"));
 					if (parts.length >= 2) {
 						String mac = parts[0].trim();
 						String customName = parts[1].trim();
@@ -175,24 +176,39 @@ public class MainWindow extends JFrame {
 		 * @param devices the set of current known devices.
 		 */
 		public void saveKnownDevices(Set<Device> devices) {
+			// Get current devices
 			Map<String, String> currentDevices = new HashMap<>();
 			for (Device device : devices) {
 				currentDevices.put(device.getMacAddress(), device.getCustomName());
 			}
 
+			// Load or use cached known devices
 			Map<String, String> knownDevices;
 			if (savedDevices == null) {
 				knownDevices = loadKnownDevices();
 			} else {
-				knownDevices = savedDevices;
+				knownDevices = new HashMap<>(savedDevices);
 			}
 
-			System.out.println(knownDevices);
+			// Track if any changes were made
+			boolean hasChanges = false;
 
-			if (!currentDevices.equals(knownDevices)) {
+			// Update known devices with new/modified entries
+			for (Map.Entry<String, String> entry : currentDevices.entrySet()) {
+				String mac = entry.getKey();
+				String newName = entry.getValue();
+
+				if (!knownDevices.containsKey(mac) || !knownDevices.get(mac).equals(newName)) {
+					knownDevices.put(mac, newName);
+					hasChanges = true;
+				}
+			}
+
+			// Save if there were changes
+			if (hasChanges) {
 				String filePath = config.getKnownDevicesFilePath();
 				try (BufferedWriter writer = new BufferedWriter(new FileWriter(filePath))) {
-					for (Map.Entry<String, String> entry : currentDevices.entrySet()) {
+					for (Map.Entry<String, String> entry : knownDevices.entrySet()) {
 						writer.write(entry.getKey() + "||" + entry.getValue());
 						writer.newLine();
 					}
@@ -201,7 +217,7 @@ public class MainWindow extends JFrame {
 				}
 			}
 
-			savedDevices = currentDevices;
+			savedDevices = new HashMap<>(knownDevices);
 		}
 	};
 
