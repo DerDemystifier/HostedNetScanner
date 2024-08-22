@@ -227,7 +227,6 @@ public class MainWindow extends JFrame {
 	public MainWindow() {
 		initializeComponents();
 		initializeHostedNetwork();
-
 	}
 
 	void initializeHostedNetwork() {
@@ -305,11 +304,39 @@ public class MainWindow extends JFrame {
 						"Last Seen" }) {
 			Class[] columnTypes = new Class[] { Icon.class, String.class, String.class, String.class, String.class,
 					Object.class, String.class };
+			boolean[] columnEditable = new boolean[] { false, false, true, false, false, false, false };
 
 			public Class getColumnClass(int columnIndex) {
 				return columnTypes[columnIndex];
 			}
+
+			public boolean isCellEditable(int row, int column) {
+				return columnEditable[column];
+			}
 		});
+
+		table.getModel().addTableModelListener(e -> {
+			if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
+				int row = e.getFirstRow();
+				int column = e.getColumn();
+				if (column == 2) { // 'Custom name' column index
+					String newCustomName = (String) table.getValueAt(row, column);
+					String macAddress = (String) table.getValueAt(row, 3);
+
+					// Find and update the corresponding Device
+					for (Device device : HostedNetwork.getInstance().getKnownDevices()) {
+						if (device.getMacAddress().equals(macAddress)) {
+							device.setCustomName(newCustomName);
+							break;
+						}
+					}
+
+					// Notify listeners about the update
+					HostedNetwork.getInstance().notifyListeners(HostedNetwork.getInstance().getKnownDevices());
+				}
+			}
+		});
+
 		table.getColumnModel().getColumn(0).setResizable(false);
 		table.getColumnModel().getColumn(0).setMaxWidth(46);
 		table.getColumnModel().getColumn(1).setResizable(false);
@@ -320,6 +347,7 @@ public class MainWindow extends JFrame {
 		table.getColumnModel().getColumn(4).setMaxWidth(130);
 		table.getColumnModel().getColumn(5).setResizable(false);
 		table.getColumnModel().getColumn(6).setResizable(false);
+
 		scrollPane.setViewportView(table);
 	}
 }
