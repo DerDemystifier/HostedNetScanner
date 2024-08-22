@@ -40,6 +40,7 @@ public class MainWindow extends JFrame {
 	private JPanel contentPane;
 	private JTable table;
 	private JMenuItem mntmStartNetwork;
+	private JMenuItem mntmStopNetwork; // New menu item
 	private ConfigManager config = new ConfigManager();
 
 	// Add status icons
@@ -236,6 +237,7 @@ public class MainWindow extends JFrame {
 			HostedNetwork hnet = HostedNetwork.findHostedNetworkInstance();
 			hnet.monitorNetwork();
 			mntmStartNetwork.setEnabled(false);
+			mntmStopNetwork.setEnabled(true); // Enable Stop when network is running
 			hnet.addNetworkUpdateListener(refreshTableListener);
 			hnet.addNetworkUpdateListener(saveDevicesLog);
 			hnet.addNetworkUpdateListener(saveKnownDevices);
@@ -273,6 +275,15 @@ public class MainWindow extends JFrame {
 			}
 		});
 
+		mntmStopNetwork = new JMenuItem("Stop Hosted Network"); // New menu item
+		mntmStopNetwork.addActionListener(new ActionListener() { // ActionListener for stopping
+			public void actionPerformed(ActionEvent e) {
+				HostedNetwork.stopNetwork();
+				mntmStartNetwork.setEnabled(true);
+				mntmStopNetwork.setEnabled(false);
+			}
+		});
+
 		JMenuItem mntmConfigManager = new JMenuItem("Open Config");
 		mntmConfigManager.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
@@ -281,6 +292,8 @@ public class MainWindow extends JFrame {
 		});
 		mnServer.add(mntmConfigManager);
 		mnServer.add(mntmStartNetwork);
+		mnServer.add(mntmStopNetwork); // Add the new menu item to the menu
+		mntmStopNetwork.setEnabled(false); // Initially disabled
 
 		JMenu mnHelp = new JMenu("Help");
 		menuBar.add(mnHelp);

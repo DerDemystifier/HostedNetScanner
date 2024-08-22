@@ -48,6 +48,18 @@ public class HostedNetwork extends Network {
 		return hnet;
 	}
 
+
+	public static void stopNetwork() {
+		try {
+			Runtime.getRuntime().exec("netsh wlan stop hostednetwork");
+			if (instance != null) {
+				instance.notifyListeners(instance.getKnownDevices());
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+
 	/**
 	 * Attempts to find and return an instance of HostedNetwork by scanning
 	 * available networks. The method will make up to 6 attempts, with a 500ms delay
@@ -138,6 +150,7 @@ public class HostedNetwork extends Network {
 
 		return false;
 	}
+
 
 	// Parse connected clients from netsh command
 	public Set<Device> getConnectedDevices() throws IOException {
