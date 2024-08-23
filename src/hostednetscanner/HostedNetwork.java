@@ -26,28 +26,29 @@ public class HostedNetwork extends Network {
 	}
 
 	public static Network startNetwork() {
-		if (!isNetworkRunning()) {
-			try {
-				Runtime.getRuntime().exec("netsh wlan start hostednetwork");
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-
 		if (instance != null) {
 			return getInstance();
 		}
 
-		HostedNetwork hnet = findHostedNetworkInstance();
-		if (hnet != null) {
-			hnet.monitorNetwork();
-		} else {
-			System.out.println("Hosted network not found.");
+		final int MAX_RETRY_ATTEMPTS = 3;
+		final int RETRY_DELAY_MS = 500;
+
+		int attempts = 0;
+		while (!isNetworkRunning() && attempts < MAX_RETRY_ATTEMPTS) {
+			try {
+				System.out.println("Attempting to start network, attempt " + (attempts + 1));
+				Runtime.getRuntime().exec("netsh wlan start hostednetwork");
+				Thread.sleep(RETRY_DELAY_MS);
+				attempts++;
+			} catch (Exception e) {
+				e.printStackTrace();
+				return null;
+			}
 		}
 
+		HostedNetwork hnet = findHostedNetworkInstance();
 		return hnet;
 	}
-
 
 	public static void stopNetwork() {
 		try {
