@@ -1,6 +1,7 @@
 package HostedNetScannerUI;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -32,7 +33,6 @@ import javax.swing.table.DefaultTableModel;
 import hostednetscanner.ConfigManager;
 import hostednetscanner.Device;
 import hostednetscanner.HostedNetwork;
-import hostednetscanner.Network;
 import hostednetscanner.NetworkUpdateListener;
 
 public class MainWindow extends JFrame {
@@ -235,12 +235,12 @@ public class MainWindow extends JFrame {
 			// If the network is already running, get the HostedNetwork instance
 
 			HostedNetwork hnet = HostedNetwork.findHostedNetworkInstance();
-			hnet.monitorNetwork();
-			mntmStartNetwork.setEnabled(false);
-			mntmStopNetwork.setEnabled(true); // Enable Stop when network is running
 			hnet.addNetworkUpdateListener(refreshTableListener);
 			hnet.addNetworkUpdateListener(saveDevicesLog);
 			hnet.addNetworkUpdateListener(saveKnownDevices);
+			hnet.monitorNetwork();
+			mntmStartNetwork.setEnabled(false);
+			mntmStopNetwork.setEnabled(true); // Enable Stop when network is running
 		}
 	}
 
@@ -269,7 +269,7 @@ public class MainWindow extends JFrame {
 		mntmStartNetwork = new JMenuItem("Start Hosted Network");
 		mntmStartNetwork.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				Network hnet = HostedNetwork.startNetwork();
+				HostedNetwork.startNetwork();
 
 				initializeHostedNetwork();
 			}
@@ -301,12 +301,14 @@ public class MainWindow extends JFrame {
 		JMenuItem mntmAbout = new JMenuItem("About");
 		mnHelp.add(mntmAbout);
 		contentPane = new JPanel();
+		contentPane.setBackground(Color.WHITE);
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 
 		setContentPane(contentPane);
 		contentPane.setLayout(new BorderLayout(0, 0));
 
 		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBackground(new Color(0, 128, 0));
 		contentPane.add(scrollPane);
 
 		table = new JTable();

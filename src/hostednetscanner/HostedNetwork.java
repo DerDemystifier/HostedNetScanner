@@ -4,9 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -152,7 +154,6 @@ public class HostedNetwork extends Network {
 		return false;
 	}
 
-
 	// Parse connected clients from netsh command
 	public Set<Device> getConnectedDevices() throws IOException {
 		Set<Device> devices = new HashSet<>();
@@ -241,20 +242,24 @@ public class HostedNetwork extends Network {
 		}
 
 		if (networkModified) {
+			List<CompletableFuture<Void>> HN_lookupTasks = new ArrayList<>();
+
 			for (Device newDevice : newDevices) {
 				if (newDevice.getHostname() == null) {
-					System.out.println("Will try to find hostname");
-					ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
-					executor.schedule(() -> {
+					CompletableFuture<Void> lookupTask = CompletableFuture.runAsync(() -> {
 						String hostName = newDevice.getIpAddress().getHostName();
-						System.out.println("FOUND" + newDevice.getIpAddress().getHostName());
 						newDevice.setHostname(hostName);
-						notifyListeners(this.getKnownDevices());
-					}, 1, TimeUnit.SECONDS);
+					});
+					HN_lookupTasks.add(lookupTask);
 				}
 			}
 
-			notifyListeners(this.getKnownDevices());
+			notifyListeners(getKnownDevices());
+
+			// Wait for all hostname lookups to complete then notify
+			CompletableFuture.allOf(HN_lookupTasks.toArray(new CompletableFuture[0])).thenRun(() -> {
+				notifyListeners(getKnownDevices());
+			});
 		}
 	}
 
