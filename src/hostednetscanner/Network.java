@@ -69,13 +69,13 @@ public class Network {
 	/**
 	 * Load known peers from file using ConfigManager.
 	 */
-	private static Map<String, String> loadKnownPeers() throws IOException {
+	static Map<String, String> loadKnownPeers() throws IOException {
 		ConfigManager configManager = new ConfigManager();
 		String knownDevicesPath = configManager.getKnownDevicesFilePath();
 		Map<String, String> knownPeers = new HashMap<>();
 		File file = new File(knownDevicesPath);
 		if (!file.exists())
-			return knownPeers;
+			return null;
 
 		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 			String line;
@@ -89,7 +89,7 @@ public class Network {
 		return knownPeers;
 	}
 
-	// Recognize client by MAC;
+	// Recognise client by MAC;
 	public static String recognizeClient(String mac) throws IOException {
 		Map<String, String> knownPeers = loadKnownPeers();
 		if (knownPeers.containsKey(mac)) {

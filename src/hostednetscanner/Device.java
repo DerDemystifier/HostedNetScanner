@@ -1,4 +1,5 @@
 package hostednetscanner;
+
 import java.net.InetAddress;
 import java.text.MessageFormat;
 import java.time.LocalDateTime;
@@ -54,7 +55,7 @@ public class Device {
 	public String getHostAddress() {
 		if (this.getIpAddress() != null)
 			return this.getIpAddress().getHostAddress();
-		return "-.-.-.-";
+		return null;
 	}
 
 	public void setIpAddress(InetAddress ipAddress) {

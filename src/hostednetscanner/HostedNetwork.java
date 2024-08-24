@@ -4,9 +4,11 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
@@ -18,6 +20,8 @@ import java.util.stream.Collectors;
 
 public class HostedNetwork extends Network {
 	private static HostedNetwork instance;
+	private WatchService watchService;
+	private Thread watchThread;
 
 	private HostedNetwork(Network network) {
 		super(network.getConnectedInterface());
@@ -58,6 +62,14 @@ public class HostedNetwork extends Network {
 			if (instance != null) {
 				instance.getKnownDevices().clear();
 				instance.notifyListeners(instance.getKnownDevices());
+
+				// Stop the watch service
+				if (instance.watchService != null) {
+					instance.watchService.close();
+				}
+				if (instance.watchThread != null) {
+					instance.watchThread.interrupt();
+				}
 			}
 			instance = null;
 		} catch (Exception e) {
@@ -263,6 +275,12 @@ public class HostedNetwork extends Network {
 				notifyListeners(getKnownDevices());
 			});
 		}
+
+		try {
+			if (recheckCustomNames())
+				notifyListeners(getKnownDevices());
+		} catch (IOException e) {
+		}
 	}
 
 	/**
@@ -284,5 +302,18 @@ public class HostedNetwork extends Network {
 		executor.scheduleAtFixedRate(() -> {
 			this.updateConnectedDevices();
 		}, 0, 2, TimeUnit.SECONDS);
+	}
+
+	private boolean recheckCustomNames() throws IOException {
+		boolean changed = false;
+		Map<String, String> knownDevicesMap = loadKnownPeers();
+		for (Device device : getKnownDevices()) {
+			String customName = knownDevicesMap.get(device.getMacAddress());
+			if (customName != null && !customName.equals(device.getCustomName())) {
+				device.setCustomName(customName);
+				changed = true;
+			}
+		}
+		return changed;
 	}
 }
