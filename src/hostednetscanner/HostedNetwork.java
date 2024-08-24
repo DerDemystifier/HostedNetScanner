@@ -56,8 +56,10 @@ public class HostedNetwork extends Network {
 		try {
 			Runtime.getRuntime().exec("netsh wlan stop hostednetwork");
 			if (instance != null) {
+				instance.getKnownDevices().clear();
 				instance.notifyListeners(instance.getKnownDevices());
 			}
+			instance = null;
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

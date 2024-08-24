@@ -279,6 +279,11 @@ public class MainWindow extends JFrame {
 		mntmStopNetwork.addActionListener(new ActionListener() { // ActionListener for stopping
 			public void actionPerformed(ActionEvent e) {
 				HostedNetwork.stopNetwork();
+
+				// Clear the table
+				DefaultTableModel model = (DefaultTableModel) table.getModel();
+				model.setRowCount(0);
+
 				mntmStartNetwork.setEnabled(true);
 				mntmStopNetwork.setEnabled(false);
 			}
