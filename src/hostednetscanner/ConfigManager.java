@@ -10,6 +10,9 @@ public class ConfigManager {
 	// Config saved in Computer\HKEY_USERS\S-1-5-21-ID\SOFTWARE\JavaSoft\Prefs
 	private static final String deviceLogFilePath = "device_log_file_path";
 	private static final String knownDevicesFilePath = "known_devices_file_path";
+	private static final String bssidKey = "hosted_network_bssid";
+	private static final String networkPasswordKey = "hosted_network_password";
+	private static final String ssidKey = "hosted_network_ssid"; // Add this constant
 	private Preferences prefs;
 
 	public ConfigManager() {
@@ -32,6 +35,22 @@ public class ConfigManager {
 
 	public String getKnownDevicesFilePath() {
 		return prefs.get(knownDevicesFilePath, System.getProperty("user.dir") + "/knownDevices.txt");
+	}
+
+	public void saveNetworkPassword(String password) {
+		prefs.put(networkPasswordKey, password);
+	}
+
+	public String getNetworkPassword() {
+		return prefs.get(networkPasswordKey, "");
+	}
+
+	public void saveSSID(String ssid) { // Add this method
+		prefs.put(ssidKey, ssid);
+	}
+
+	public String getSSID() { // Add this method
+		return prefs.get(ssidKey, "HostedNetScanner"); // Default SSID if not set
 	}
 
 	/**

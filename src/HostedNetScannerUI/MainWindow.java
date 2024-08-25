@@ -34,6 +34,7 @@ import hostednetscanner.ConfigManager;
 import hostednetscanner.Device;
 import hostednetscanner.HostedNetwork;
 import hostednetscanner.NetworkUpdateListener;
+import HostedNetScannerUI.NetworkSettingsWindow; // Add this import
 
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -299,6 +300,14 @@ public class MainWindow extends JFrame {
 		mnServer.add(mntmStartNetwork);
 		mnServer.add(mntmStopNetwork); // Add the new menu item to the menu
 		mntmStopNetwork.setEnabled(false); // Initially disabled
+
+		JMenuItem mntmNetworkSettings = new JMenuItem("Network Settings"); // New menu item
+		mntmNetworkSettings.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new NetworkSettingsWindow().setVisible(true);
+			}
+		});
+		mnServer.add(mntmNetworkSettings); // Add the new menu item to the menu
 
 		JMenu mnHelp = new JMenu("Help");
 		menuBar.add(mnHelp);

@@ -36,6 +36,10 @@ public class HostedNetwork extends Network {
 			return getInstance();
 		}
 
+		ConfigManager config = new ConfigManager(); // Initialize ConfigManager
+		String password = config.getNetworkPassword(); // Retrieve configured Password
+		String ssid = config.getSSID(); // Retrieve configured SSID
+
 		final int MAX_RETRY_ATTEMPTS = 3;
 		final int RETRY_DELAY_MS = 500;
 
@@ -43,6 +47,21 @@ public class HostedNetwork extends Network {
 		while (!isNetworkRunning() && attempts < MAX_RETRY_ATTEMPTS) {
 			try {
 				System.out.println("Attempting to start network, attempt " + (attempts + 1));
+
+				// Set SSID and Password
+				if (ssid == null || ssid.isEmpty()) {
+					System.out.println("No SSID.");
+					return null;
+				}
+
+				String setCommand = String.format(
+						"netsh wlan set hostednetwork mode=allow ssid=\"%s\" key=\"%s\" keyUsage=persistent", ssid,
+						password);
+
+				// Start Hosted Network
+				Runtime.getRuntime().exec(setCommand);
+
+				// Start Hosted Network
 				Runtime.getRuntime().exec("netsh wlan start hostednetwork");
 				Thread.sleep(RETRY_DELAY_MS);
 				attempts++;
