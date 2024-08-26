@@ -70,13 +70,13 @@ public class Network {
 	/**
 	 * Load known peers from file using ConfigManager.
 	 */
-	public static Map<String, String> loadKnownPeers() throws IOException {
+	public static Map<String, String> loadKnownPeers() {
 		ConfigManager configManager = new ConfigManager();
 		String knownDevicesPath = configManager.getKnownDevicesFilePath();
 		Map<String, String> knownPeers = new HashMap<>();
 		File file = new File(knownDevicesPath);
 		if (!file.exists())
-			return null;
+			return knownPeers; // Return empty map instead of null
 
 		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 			String line;
@@ -88,6 +88,8 @@ public class Network {
 					knownPeers.put(mac, name);
 				}
 			}
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		return knownPeers;
 	}
