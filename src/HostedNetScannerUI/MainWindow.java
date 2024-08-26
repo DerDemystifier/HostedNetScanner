@@ -135,41 +135,11 @@ public class MainWindow extends JFrame {
 	 * listener is triggered when the network is updated.
 	 */
 	private NetworkUpdateListener saveKnownDevices = new NetworkUpdateListener() {
-		private Map<String, String> savedDevices;
+		private Map<String, String> cachedDevices;
 
 		@Override
 		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
 			saveKnownDevices(knownDevices);
-		}
-
-		/**
-		 * Loads known devices from the specified file.
-		 *
-		 * @return a map of MAC addresses to custom names.
-		 */
-		public Map<String, String> loadKnownDevices() {
-			Map<String, String> knownDevices = new HashMap<>();
-			String filePath = config.getKnownDevicesFilePath();
-			File file = new File(filePath);
-			if (!file.exists()) {
-				return knownDevices;
-			}
-
-			try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
-				String line;
-				while ((line = reader.readLine()) != null) {
-					String[] parts = line.split(Pattern.quote("||"));
-					if (parts.length >= 2) {
-						String mac = parts[0].trim();
-						String customName = parts[1].trim();
-						knownDevices.put(mac, customName);
-					}
-				}
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-
-			return knownDevices;
 		}
 
 		/**
@@ -186,10 +156,24 @@ public class MainWindow extends JFrame {
 
 			// Load or use cached known devices
 			Map<String, String> knownDevices;
-			if (savedDevices == null) {
-				knownDevices = loadKnownDevices();
+
+			if (cachedDevices == null) {
+				try {
+					Map<String, String> loadedDevices = Network.loadKnownPeers();
+					if (loadedDevices != null) {
+						cachedDevices = loadedDevices; // Update the cached version if loading was successful
+						knownDevices = new HashMap<>(cachedDevices); // Use the newly loaded devices
+					} else {
+						// Handle the case where loadKnownPeers returns null (e.g., empty data source)
+						knownDevices = new HashMap<>(); // Initialize an empty map
+						System.err.println("Warning: Network.loadKnownPeers returned null.");
+					}
+				} catch (IOException e) {
+					knownDevices = new HashMap<>(); // Fallback to an empty map
+					System.err.println("Error loading known peers: " + e.getMessage());
+				}
 			} else {
-				knownDevices = new HashMap<>(savedDevices);
+				knownDevices = new HashMap<>(cachedDevices); // Use the cached version
 			}
 
 			// Track if any changes were made
