@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Pattern;
 
 public class Network {
 	private Device connectedInterface;
@@ -69,7 +70,7 @@ public class Network {
 	/**
 	 * Load known peers from file using ConfigManager.
 	 */
-	static Map<String, String> loadKnownPeers() throws IOException {
+	public static Map<String, String> loadKnownPeers() throws IOException {
 		ConfigManager configManager = new ConfigManager();
 		String knownDevicesPath = configManager.getKnownDevicesFilePath();
 		Map<String, String> knownPeers = new HashMap<>();
@@ -80,9 +81,11 @@ public class Network {
 		try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
 			String line;
 			while ((line = reader.readLine()) != null) {
-				String[] parts = line.split("\\|\\|");
+				String[] parts = line.split(Pattern.quote("||"));
 				if (parts.length == 2) {
-					knownPeers.put(parts[0].trim(), parts[1].trim());
+					String mac = Device.formatMacAddress(parts[0].trim());
+					String name = parts[1].trim();
+					knownPeers.put(mac, name);
 				}
 			}
 		}

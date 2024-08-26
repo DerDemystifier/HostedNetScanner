@@ -5,10 +5,7 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -16,7 +13,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
@@ -33,8 +29,8 @@ import javax.swing.table.DefaultTableModel;
 import hostednetscanner.ConfigManager;
 import hostednetscanner.Device;
 import hostednetscanner.HostedNetwork;
+import hostednetscanner.Network;
 import hostednetscanner.NetworkUpdateListener;
-import HostedNetScannerUI.NetworkSettingsWindow; // Add this import
 
 public class MainWindow extends JFrame {
 	private static final long serialVersionUID = 1L;
@@ -203,7 +199,7 @@ public class MainWindow extends JFrame {
 				}
 			}
 
-			savedDevices = new HashMap<>(knownDevices);
+			cachedDevices = new HashMap<>(knownDevices);
 		}
 	};
 
