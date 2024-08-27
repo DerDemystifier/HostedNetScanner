@@ -10,7 +10,10 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -56,7 +59,22 @@ public class MainWindow extends JFrame {
 		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
 			DefaultTableModel model = (DefaultTableModel) table.getModel();
 			model.setRowCount(0);
-			for (Device device : knownDevices) {
+
+			// Convert to list and sort
+			List<Device> sortedDevices = new ArrayList<>(knownDevices);
+			Collections.sort(sortedDevices, (d1, d2) -> {
+				// Push offline devices last
+				boolean isOffline1 = d1.getStatus().equalsIgnoreCase("offline");
+				boolean isOffline2 = d2.getStatus().equalsIgnoreCase("offline");
+				if (isOffline1 != isOffline2) {
+					return isOffline1 ? 1 : -1;
+				}
+
+				// Sort by IP address
+				return d1.getHostAddress().compareTo(d2.getHostAddress());
+			});
+
+			for (Device device : sortedDevices) {
 				// Convert status to appropriate icon
 				ImageIcon statusIcon;
 				switch (device.getStatus().toLowerCase()) {
