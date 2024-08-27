@@ -245,22 +245,35 @@ public class HostedNetwork extends Network {
 
 		boolean networkModified = false;
 
+		// Mac, Device map for quick lookup by MAC address
+		Map<String, Device> reachableDevicesMap = reachableDevices.stream()
+				.collect(Collectors.toMap(Device::getMacAddress, d -> d));
+		Map<String, Device> connectedDevicesMap = connectedDevices.stream()
+				.collect(Collectors.toMap(Device::getMacAddress, d -> d));
+
 		// Mark existing devices as offline if not in new network
 		for (Device existingDevice : this.getKnownDevices()) {
 			if (existingDevice.equals(this.getConnectedInterface()))
 				continue;
 
+			Device reachableDevice = reachableDevicesMap.get(existingDevice.getMacAddress());
+			boolean isReachable = reachableDevice != null;
+			boolean isConnected = connectedDevicesMap.containsKey(existingDevice.getMacAddress());
+
+			if (isReachable) {
+				existingDevice.setIpAddress(reachableDevice.getIpAddress());
+			}
+
 			String newStatus;
-			if (connectedDevices.contains(existingDevice) && reachableDevices.contains(existingDevice)) {
+			if (isConnected && isReachable) {
 				newStatus = "online";
-			} else if (connectedDevices.contains(existingDevice) && !reachableDevices.contains(existingDevice)
-					|| !connectedDevices.contains(existingDevice) && reachableDevices.contains(existingDevice)) {
+			} else if (isConnected || isReachable) {
 				newStatus = "unconfirmed";
 			} else {
 				newStatus = "offline";
 			}
 
-			if (newStatus != existingDevice.getStatus()) {
+			if (!newStatus.equals(existingDevice.getStatus())) {
 				existingDevice.setStatus(newStatus);
 				networkModified = true;
 			}
