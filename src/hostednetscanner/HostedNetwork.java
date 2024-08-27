@@ -335,4 +335,24 @@ public class HostedNetwork extends Network {
 		}
 		return changed;
 	}
+
+	public void refreshData() {
+		// Re-scan network interfaces to get updated information
+		List<Network> allNetworks = IPConfigScanner.scanNetworks();
+
+		// Find our network interface with updated information
+		for (Network network : allNetworks) {
+			if (network.getConnectedInterface().getMacAddress().equals(getHostedNetMac())) {
+				// Update the connected interface with new information
+				this.setConnectedInterface(network.getConnectedInterface());
+				break;
+			}
+		}
+
+		// Clear current devices to force a full refresh
+		this.getKnownDevices().clear();
+
+		// Force an immediate update of connected devices
+		updateConnectedDevices();
+	}
 }

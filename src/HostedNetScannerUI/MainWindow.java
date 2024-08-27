@@ -22,6 +22,7 @@ import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.JSeparator;
 import javax.swing.JTable;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
@@ -38,6 +39,7 @@ public class MainWindow extends JFrame {
 	private JTable table;
 	private JMenuItem mntmStartNetwork;
 	private JMenuItem mntmStopNetwork; // New menu item
+	private JMenuItem mntmRefresh; // Declare the new menu item
 	private ConfigManager config = new ConfigManager();
 
 	// Add status icons
@@ -154,19 +156,14 @@ public class MainWindow extends JFrame {
 			Map<String, String> knownDevices;
 
 			if (cachedDevices == null) {
-				try {
-					Map<String, String> loadedDevices = Network.loadKnownPeers();
-					if (loadedDevices != null) {
-						cachedDevices = loadedDevices; // Update the cached version if loading was successful
-						knownDevices = new HashMap<>(cachedDevices); // Use the newly loaded devices
-					} else {
-						// Handle the case where loadKnownPeers returns null (e.g., empty data source)
-						knownDevices = new HashMap<>(); // Initialize an empty map
-						System.err.println("Warning: Network.loadKnownPeers returned null.");
-					}
-				} catch (IOException e) {
-					knownDevices = new HashMap<>(); // Fallback to an empty map
-					System.err.println("Error loading known peers: " + e.getMessage());
+				Map<String, String> loadedDevices = Network.loadKnownPeers();
+				if (loadedDevices != null) {
+					cachedDevices = loadedDevices; // Update the cached version if loading was successful
+					knownDevices = new HashMap<>(cachedDevices); // Use the newly loaded devices
+				} else {
+					// Handle the case where loadKnownPeers returns null (e.g., empty data source)
+					knownDevices = new HashMap<>(); // Initialize an empty map
+					System.err.println("Warning: Network.loadKnownPeers returned null.");
 				}
 			} else {
 				knownDevices = new HashMap<>(cachedDevices); // Use the cached version
@@ -244,19 +241,25 @@ public class MainWindow extends JFrame {
 		});
 		mnFile.add(mntmQuit);
 
-		JMenu mnServer = new JMenu("Options");
+		JMenu mnServer = new JMenu("Server");
 		menuBar.add(mnServer);
 
-		mntmStartNetwork = new JMenuItem("Start Hosted Network");
-		mntmStartNetwork.addActionListener(new ActionListener() {
+		JMenuItem mntmNetworkSettings = new JMenuItem("Network Settings"); // New menu item
+		mnServer.add(mntmNetworkSettings);
+		mntmNetworkSettings.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				HostedNetwork.startNetwork();
-
-				initializeHostedNetwork();
+				new NetworkSettingsWindow().setVisible(true);
 			}
 		});
 
+		JSeparator separator_1 = new JSeparator();
+		mnServer.add(separator_1);
+
+		mntmStartNetwork = new JMenuItem("Start Hosted Network");
+		mnServer.add(mntmStartNetwork);
+
 		mntmStopNetwork = new JMenuItem("Stop Hosted Network"); // New menu item
+		mnServer.add(mntmStopNetwork);
 		mntmStopNetwork.addActionListener(new ActionListener() { // ActionListener for stopping
 			public void actionPerformed(ActionEvent e) {
 				HostedNetwork.stopNetwork();
@@ -269,6 +272,29 @@ public class MainWindow extends JFrame {
 				mntmStopNetwork.setEnabled(false);
 			}
 		});
+		mntmStopNetwork.setEnabled(false); // Initially disabled
+
+		JSeparator separator = new JSeparator();
+		mnServer.add(separator);
+
+		// Add "Refresh" menu item to the Options menu
+		mntmRefresh = new JMenuItem("Refresh");
+		mnServer.add(mntmRefresh);
+		mntmRefresh.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				HostedNetwork.getInstance().refreshData();
+			}
+		});
+		mntmStartNetwork.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				HostedNetwork.startNetwork();
+
+				initializeHostedNetwork();
+			}
+		});
+
+		JMenu mnOptions = new JMenu("Options");
+		menuBar.add(mnOptions);
 
 		JMenuItem mntmConfigManager = new JMenuItem("Open Config");
 		mntmConfigManager.addActionListener(new ActionListener() {
@@ -276,18 +302,7 @@ public class MainWindow extends JFrame {
 				new ConfigWindow();
 			}
 		});
-		mnServer.add(mntmConfigManager);
-		mnServer.add(mntmStartNetwork);
-		mnServer.add(mntmStopNetwork); // Add the new menu item to the menu
-		mntmStopNetwork.setEnabled(false); // Initially disabled
-
-		JMenuItem mntmNetworkSettings = new JMenuItem("Network Settings"); // New menu item
-		mntmNetworkSettings.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				new NetworkSettingsWindow().setVisible(true);
-			}
-		});
-		mnServer.add(mntmNetworkSettings); // Add the new menu item to the menu
+		mnOptions.add(mntmConfigManager);
 
 		JMenu mnHelp = new JMenu("Help");
 		menuBar.add(mnHelp);
