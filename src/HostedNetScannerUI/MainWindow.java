@@ -55,6 +55,7 @@ public class MainWindow extends JFrame {
 	 * listener is triggered when the network is updated.
 	 */
 	private NetworkUpdateListener refreshTableListener = new NetworkUpdateListener() {
+
 		@Override
 		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
 			DefaultTableModel model = (DefaultTableModel) table.getModel();
@@ -70,8 +71,8 @@ public class MainWindow extends JFrame {
 					return isOffline1 ? 1 : -1;
 				}
 
-				// Sort by IP address
-				return d1.getHostAddress().compareTo(d2.getHostAddress());
+				// Sort by IP address, using 255.255.255.255 for null addresses
+				return getComparisonIP(d1).compareTo(getComparisonIP(d2));
 			});
 
 			for (Device device : sortedDevices) {
@@ -95,6 +96,10 @@ public class MainWindow extends JFrame {
 						device.getMacAddress(), device.getHostAddress(), device.getFormattedConnectionTime(),
 						device.getFormattedLastSeen() });
 			}
+		}
+
+		private String getComparisonIP(Device device) {
+			return device.getHostAddress() != null ? device.getHostAddress() : "255.255.255.255";
 		}
 	};
 
