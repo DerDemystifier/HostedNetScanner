@@ -37,6 +37,7 @@ import javax.swing.table.DefaultTableModel;
 import hostednetscanner.ConfigManager;
 import hostednetscanner.Device;
 import hostednetscanner.HostedNetwork;
+import hostednetscanner.Logger;
 import hostednetscanner.Network;
 import hostednetscanner.NetworkUpdateListener;
 
@@ -137,7 +138,12 @@ public class MainWindow extends JFrame {
 		mnServer.add(mntmRefresh);
 		mntmRefresh.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				HostedNetwork.getInstance().refreshData();
+				try {
+					HostedNetwork.getInstance().refreshData();
+				} catch (Exception e2) {
+					e2.printStackTrace();
+					Logger.logError("Error refreshing the table", e2);
+				}
 			}
 		});
 		mntmStartNetwork.addActionListener(new ActionListener() {
@@ -241,6 +247,7 @@ public class MainWindow extends JFrame {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			Logger.logError("Error playing sound: ", e);
 		}
 	}
 
@@ -410,6 +417,7 @@ public class MainWindow extends JFrame {
 					}
 				} catch (IOException e) {
 					e.printStackTrace();
+					Logger.logError("Error saving known devices: ", e);
 				}
 			}
 

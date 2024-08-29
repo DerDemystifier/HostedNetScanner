@@ -58,6 +58,7 @@ public class PSDeviceScanner {
 			return output.toString();
 		} catch (IOException e) {
 			e.printStackTrace();
+			Logger.logError("Error executing PowerShell script: ", e);
 			return "Exception occurred: " + e.getMessage();
 		}
 	}
@@ -81,6 +82,7 @@ public class PSDeviceScanner {
 			return output.toString();
 		} catch (IOException e) {
 			e.printStackTrace();
+			Logger.logError("Error executing PowerShell command: ", e);
 			return "Exception occurred: " + e.getMessage();
 		}
 	}
@@ -129,7 +131,6 @@ public class PSDeviceScanner {
 
 		while (reader.hasNextLine()) {
 			line = reader.nextLine();
-			System.out.println(line);
 			if (line.startsWith("IP Address")) {
 				ipAddress = line.split(":\\s+")[1].trim();
 			} else if (line.startsWith("MAC Address")) {
@@ -168,6 +169,7 @@ public class PSDeviceScanner {
 			initialized = false;
 		} catch (IOException e) {
 			e.printStackTrace();
+			Logger.logError("Error closing PowerShell process: ", e);
 		}
 	}
 

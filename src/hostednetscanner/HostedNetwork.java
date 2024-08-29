@@ -46,11 +46,8 @@ public class HostedNetwork extends Network {
 		int attempts = 0;
 		while (!isNetworkRunning() && attempts < MAX_RETRY_ATTEMPTS) {
 			try {
-				System.out.println("Attempting to start network, attempt " + (attempts + 1));
-
 				// Set SSID and Password
 				if (ssid == null || ssid.isEmpty()) {
-					System.out.println("No SSID.");
 					return null;
 				}
 
@@ -67,6 +64,7 @@ public class HostedNetwork extends Network {
 				attempts++;
 			} catch (Exception e) {
 				e.printStackTrace();
+				Logger.logError("Error starting hosted network: ", e);
 				return null;
 			}
 		}
@@ -93,6 +91,7 @@ public class HostedNetwork extends Network {
 			instance = null;
 		} catch (Exception e) {
 			e.printStackTrace();
+			Logger.logError("Error stopping hosted network: ", e);
 		}
 	}
 
@@ -160,6 +159,7 @@ public class HostedNetwork extends Network {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			Logger.logError("Error getting hosted network MAC address: ", e);
 		}
 
 		return null;
@@ -182,6 +182,7 @@ public class HostedNetwork extends Network {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
+			Logger.logError("Error checking if hosted network is running: ", e);
 		}
 
 		return false;
@@ -214,6 +215,7 @@ public class HostedNetwork extends Network {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			Logger.logError("Error getting connected devices: ", e);
 		}
 
 		return devices;
@@ -226,6 +228,7 @@ public class HostedNetwork extends Network {
 			connectedDevices = getConnectedDevices();
 		} catch (IOException e) {
 			e.printStackTrace();
+			Logger.logError("Error getting connected devices: ", e);
 		}
 
 		Set<Device> reachableDevices = null;

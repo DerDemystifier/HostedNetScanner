@@ -33,6 +33,7 @@ public class IPConfigScanner {
 			return networks;
 		} catch (Exception e) {
 			e.printStackTrace();
+			Logger.logError("Error executing IPConfig scan: ", e);
 			return new ArrayList<>();
 		}
 	}
@@ -72,6 +73,7 @@ public class IPConfigScanner {
 						ipAddress = InetAddress.getByName(ip);
 					} catch (UnknownHostException e) {
 						e.printStackTrace();
+						Logger.logError("Error parsing IP address: ", e);
 					}
 
 					Device device = new Device(ipAddress, mac);

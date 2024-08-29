@@ -5,6 +5,7 @@ import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
 import HostedNetScannerUI.MainWindow;
+import hostednetscanner.Logger;
 
 public class App {
 	public static void main(String[] args) {
@@ -17,6 +18,7 @@ public class App {
 			UIManager.setLookAndFeel("javax.swing.plaf.nimbus.NimbusLookAndFeel");
 		} catch (Throwable e) {
 			e.printStackTrace();
+			Logger.logError("Error setting the look and feel: ", e);
 		}
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
@@ -25,6 +27,7 @@ public class App {
 					frame.setVisible(true);
 				} catch (Exception e) {
 					e.printStackTrace();
+					Logger.logError("Error creating the main window: ", e);
 				}
 			}
 		});

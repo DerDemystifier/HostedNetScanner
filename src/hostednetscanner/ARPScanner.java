@@ -24,8 +24,8 @@ public class ARPScanner {
 
 			return output.toString();
 		} catch (Exception e) {
-			System.err.println("Error executing ARP scan: " + e.getMessage());
 			e.printStackTrace();
+			Logger.logError("Error executing ARP scan: ", e);
 		}
 
 		return null;
@@ -73,6 +73,7 @@ public class ARPScanner {
 					headerPassed = false;
 				} catch (UnknownHostException e) {
 					e.printStackTrace();
+					Logger.logError("Error parsing network interface: ", e);
 				}
 				continue;
 			}
@@ -100,6 +101,7 @@ public class ARPScanner {
 						}
 					} catch (UnknownHostException e) {
 						e.printStackTrace();
+						Logger.logError("Error parsing device entry: ", e);
 					}
 				}
 			}
@@ -125,6 +127,7 @@ public class ARPScanner {
 						devices.add(new Device(ipAddress, macAddress));
 					} catch (Exception e) {
 						e.printStackTrace();
+						Logger.logError("Error parsing device entry: ", e);
 					}
 				}
 				break;

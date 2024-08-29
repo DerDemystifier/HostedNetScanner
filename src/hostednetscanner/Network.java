@@ -90,6 +90,7 @@ public class Network {
 			}
 		} catch (IOException e) {
 			e.printStackTrace();
+			Logger.logError("Error loading known peers: ", e);
 		}
 		return knownPeers;
 	}
