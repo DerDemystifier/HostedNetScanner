@@ -6,6 +6,7 @@ import java.awt.Font;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -17,6 +18,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.Clip;
 import javax.swing.Icon;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -49,6 +53,196 @@ public class MainWindow extends JFrame {
 	private final ImageIcon statusGreen = new ImageIcon("images/green16.png");
 	private final ImageIcon statusYellow = new ImageIcon("images/yellow16.png");
 	private final ImageIcon statusRed = new ImageIcon("images/red16.png");
+
+	/**
+	 * Create the frame.
+	 */
+	public MainWindow() {
+		initializeComponents();
+		initializeHostedNetwork();
+	}
+
+	void initializeHostedNetwork() {
+		if (HostedNetwork.isNetworkRunning()) {
+			// If the network is already running, get the HostedNetwork instance
+			HostedNetwork hnet = HostedNetwork.findHostedNetworkInstance();
+			hnet.addNetworkUpdateListener(refreshTableListener);
+			hnet.addNetworkUpdateListener(saveDevicesLog);
+			hnet.addNetworkUpdateListener(saveKnownDevices);
+			hnet.addNetworkUpdateListener(playSoundListener);
+			hnet.monitorNetwork();
+
+			mntmStartNetwork.setEnabled(false);
+			mntmStopNetwork.setEnabled(true); // Enable Stop when network is running
+		}
+	}
+
+	void initializeComponents() {
+		setTitle("HostedNetScanner");
+		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setBounds(100, 100, 1200, 500);
+
+		JMenuBar menuBar = new JMenuBar();
+		setJMenuBar(menuBar);
+
+		JMenu mnFile = new JMenu("File");
+		menuBar.add(mnFile);
+
+		JMenuItem mntmQuit = new JMenuItem("Quit");
+		mntmQuit.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				System.exit(0);
+			}
+		});
+		mnFile.add(mntmQuit);
+
+		JMenu mnServer = new JMenu("Server");
+		menuBar.add(mnServer);
+
+		JMenuItem mntmNetworkSettings = new JMenuItem("Network Settings"); // New menu item
+		mnServer.add(mntmNetworkSettings);
+		mntmNetworkSettings.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new NetworkSettingsWindow().setVisible(true);
+			}
+		});
+
+		JSeparator separator_1 = new JSeparator();
+		mnServer.add(separator_1);
+
+		mntmStartNetwork = new JMenuItem("Start Hosted Network");
+		mnServer.add(mntmStartNetwork);
+
+		mntmStopNetwork = new JMenuItem("Stop Hosted Network"); // New menu item
+		mnServer.add(mntmStopNetwork);
+		mntmStopNetwork.addActionListener(new ActionListener() { // ActionListener for stopping
+			public void actionPerformed(ActionEvent e) {
+				HostedNetwork.stopNetwork();
+
+				// Clear the table
+				DefaultTableModel model = (DefaultTableModel) table.getModel();
+				model.setRowCount(0);
+
+				mntmStartNetwork.setEnabled(true);
+				mntmStopNetwork.setEnabled(false);
+			}
+		});
+		mntmStopNetwork.setEnabled(false); // Initially disabled
+
+		JSeparator separator = new JSeparator();
+		mnServer.add(separator);
+
+		// Add "Refresh" menu item to the Options menu
+		mntmRefresh = new JMenuItem("Refresh");
+		mnServer.add(mntmRefresh);
+		mntmRefresh.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				HostedNetwork.getInstance().refreshData();
+			}
+		});
+		mntmStartNetwork.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				HostedNetwork.startNetwork();
+
+				initializeHostedNetwork();
+			}
+		});
+
+		JMenu mnOptions = new JMenu("Options");
+		menuBar.add(mnOptions);
+
+		JMenuItem mntmConfigManager = new JMenuItem("Open Config");
+		mntmConfigManager.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				new ConfigWindow();
+			}
+		});
+		mnOptions.add(mntmConfigManager);
+
+		JMenu mnHelp = new JMenu("Help");
+		menuBar.add(mnHelp);
+
+		JMenuItem mntmAbout = new JMenuItem("About");
+		mnHelp.add(mntmAbout);
+		contentPane = new JPanel();
+		contentPane.setBackground(Color.WHITE);
+		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+		setContentPane(contentPane);
+		contentPane.setLayout(new BorderLayout(0, 0));
+
+		JScrollPane scrollPane = new JScrollPane();
+		scrollPane.setBackground(new Color(0, 128, 0));
+		contentPane.add(scrollPane);
+
+		table = new JTable();
+		table.setRowHeight(25);
+		table.setFont(new Font("SansSerif", Font.PLAIN, 17));
+		table.setModel(new DefaultTableModel(new Object[][] { { null, null, null, null, null, null, null }, },
+				new String[] { "Status", "Hostname", "Custom name", "MAC Address", "IP Address", "Connection time",
+						"Last Seen" }) {
+			Class[] columnTypes = new Class[] { Icon.class, String.class, String.class, String.class, String.class,
+					Object.class, String.class };
+			boolean[] columnEditable = new boolean[] { false, false, true, false, false, false, false };
+
+			public Class getColumnClass(int columnIndex) {
+				return columnTypes[columnIndex];
+			}
+
+			public boolean isCellEditable(int row, int column) {
+				return columnEditable[column];
+			}
+		});
+
+		table.getModel().addTableModelListener(e -> {
+			if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
+				int row = e.getFirstRow();
+				int column = e.getColumn();
+				if (column == 2) { // 'Custom name' column index
+					String newCustomName = (String) table.getValueAt(row, column);
+					String macAddress = (String) table.getValueAt(row, 3);
+
+					// Find and update the corresponding Device
+					for (Device device : HostedNetwork.getInstance().getKnownDevices()) {
+						if (device.getMacAddress().equals(macAddress)) {
+							device.setCustomName(newCustomName);
+							break;
+						}
+					}
+
+					// Notify listeners about the update
+					HostedNetwork.getInstance().notifyListeners(HostedNetwork.getInstance().getKnownDevices());
+				}
+			}
+		});
+
+		table.getColumnModel().getColumn(0).setResizable(false);
+		table.getColumnModel().getColumn(0).setMaxWidth(46);
+		table.getColumnModel().getColumn(1).setResizable(false);
+		table.getColumnModel().getColumn(2).setResizable(false);
+		table.getColumnModel().getColumn(3).setResizable(false);
+		table.getColumnModel().getColumn(4).setResizable(false);
+		table.getColumnModel().getColumn(4).setMinWidth(130);
+		table.getColumnModel().getColumn(4).setMaxWidth(130);
+		table.getColumnModel().getColumn(5).setResizable(false);
+		table.getColumnModel().getColumn(6).setResizable(false);
+
+		scrollPane.setViewportView(table);
+	}
+
+	private void playDingSound() {
+		try {
+			File soundFile = new File(System.getProperty("user.dir") + "/ding.wav");
+			if (soundFile.exists()) {
+				AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundFile);
+				Clip clip = AudioSystem.getClip();
+				clip.open(audioIn);
+				clip.start();
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Listener that updates the table with the active devices on the network. This
@@ -223,178 +417,16 @@ public class MainWindow extends JFrame {
 		}
 	};
 
-	/**
-	 * Create the frame.
-	 */
-	public MainWindow() {
-		initializeComponents();
-		initializeHostedNetwork();
-	}
-
-	void initializeHostedNetwork() {
-		if (HostedNetwork.isNetworkRunning()) {
-			// If the network is already running, get the HostedNetwork instance
-
-			HostedNetwork hnet = HostedNetwork.findHostedNetworkInstance();
-			hnet.addNetworkUpdateListener(refreshTableListener);
-			hnet.addNetworkUpdateListener(saveDevicesLog);
-			hnet.addNetworkUpdateListener(saveKnownDevices);
-			hnet.monitorNetwork();
-			mntmStartNetwork.setEnabled(false);
-			mntmStopNetwork.setEnabled(true); // Enable Stop when network is running
-		}
-	}
-
-	void initializeComponents() {
-		setTitle("HostedNetScanner");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		setBounds(100, 100, 1200, 500);
-
-		JMenuBar menuBar = new JMenuBar();
-		setJMenuBar(menuBar);
-
-		JMenu mnFile = new JMenu("File");
-		menuBar.add(mnFile);
-
-		JMenuItem mntmQuit = new JMenuItem("Quit");
-		mntmQuit.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				System.exit(0);
-			}
-		});
-		mnFile.add(mntmQuit);
-
-		JMenu mnServer = new JMenu("Server");
-		menuBar.add(mnServer);
-
-		JMenuItem mntmNetworkSettings = new JMenuItem("Network Settings"); // New menu item
-		mnServer.add(mntmNetworkSettings);
-		mntmNetworkSettings.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				new NetworkSettingsWindow().setVisible(true);
-			}
-		});
-
-		JSeparator separator_1 = new JSeparator();
-		mnServer.add(separator_1);
-
-		mntmStartNetwork = new JMenuItem("Start Hosted Network");
-		mnServer.add(mntmStartNetwork);
-
-		mntmStopNetwork = new JMenuItem("Stop Hosted Network"); // New menu item
-		mnServer.add(mntmStopNetwork);
-		mntmStopNetwork.addActionListener(new ActionListener() { // ActionListener for stopping
-			public void actionPerformed(ActionEvent e) {
-				HostedNetwork.stopNetwork();
-
-				// Clear the table
-				DefaultTableModel model = (DefaultTableModel) table.getModel();
-				model.setRowCount(0);
-
-				mntmStartNetwork.setEnabled(true);
-				mntmStopNetwork.setEnabled(false);
-			}
-		});
-		mntmStopNetwork.setEnabled(false); // Initially disabled
-
-		JSeparator separator = new JSeparator();
-		mnServer.add(separator);
-
-		// Add "Refresh" menu item to the Options menu
-		mntmRefresh = new JMenuItem("Refresh");
-		mnServer.add(mntmRefresh);
-		mntmRefresh.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				HostedNetwork.getInstance().refreshData();
-			}
-		});
-		mntmStartNetwork.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				HostedNetwork.startNetwork();
-
-				initializeHostedNetwork();
-			}
-		});
-
-		JMenu mnOptions = new JMenu("Options");
-		menuBar.add(mnOptions);
-
-		JMenuItem mntmConfigManager = new JMenuItem("Open Config");
-		mntmConfigManager.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				new ConfigWindow();
-			}
-		});
-		mnOptions.add(mntmConfigManager);
-
-		JMenu mnHelp = new JMenu("Help");
-		menuBar.add(mnHelp);
-
-		JMenuItem mntmAbout = new JMenuItem("About");
-		mnHelp.add(mntmAbout);
-		contentPane = new JPanel();
-		contentPane.setBackground(Color.WHITE);
-		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
-
-		setContentPane(contentPane);
-		contentPane.setLayout(new BorderLayout(0, 0));
-
-		JScrollPane scrollPane = new JScrollPane();
-		scrollPane.setBackground(new Color(0, 128, 0));
-		contentPane.add(scrollPane);
-
-		table = new JTable();
-		table.setRowHeight(25);
-		table.setFont(new Font("SansSerif", Font.PLAIN, 17));
-		table.setModel(new DefaultTableModel(new Object[][] { { null, null, null, null, null, null, null }, },
-				new String[] { "Status", "Hostname", "Custom name", "MAC Address", "IP Address", "Connection time",
-						"Last Seen" }) {
-			Class[] columnTypes = new Class[] { Icon.class, String.class, String.class, String.class, String.class,
-					Object.class, String.class };
-			boolean[] columnEditable = new boolean[] { false, false, true, false, false, false, false };
-
-			public Class getColumnClass(int columnIndex) {
-				return columnTypes[columnIndex];
-			}
-
-			public boolean isCellEditable(int row, int column) {
-				return columnEditable[column];
-			}
-		});
-
-		table.getModel().addTableModelListener(e -> {
-			if (e.getType() == javax.swing.event.TableModelEvent.UPDATE) {
-				int row = e.getFirstRow();
-				int column = e.getColumn();
-				if (column == 2) { // 'Custom name' column index
-					String newCustomName = (String) table.getValueAt(row, column);
-					String macAddress = (String) table.getValueAt(row, 3);
-
-					// Find and update the corresponding Device
-					for (Device device : HostedNetwork.getInstance().getKnownDevices()) {
-						if (device.getMacAddress().equals(macAddress)) {
-							device.setCustomName(newCustomName);
-							break;
-						}
-					}
-
-					// Notify listeners about the update
-					HostedNetwork.getInstance().notifyListeners(HostedNetwork.getInstance().getKnownDevices());
+	private NetworkUpdateListener playSoundListener = new NetworkUpdateListener() {
+		@Override
+		public void onNetworkUpdated(Set<Device> devices) {
+			for (Device device : devices) {
+				if ("offline".equals(device.getStatus())
+						|| (device.getCustomName() != null && device.getCustomName().startsWith("¨"))) {
+					playDingSound();
+					break; // Play sound once per update if condition is met
 				}
 			}
-		});
-
-		table.getColumnModel().getColumn(0).setResizable(false);
-		table.getColumnModel().getColumn(0).setMaxWidth(46);
-		table.getColumnModel().getColumn(1).setResizable(false);
-		table.getColumnModel().getColumn(2).setResizable(false);
-		table.getColumnModel().getColumn(3).setResizable(false);
-		table.getColumnModel().getColumn(4).setResizable(false);
-		table.getColumnModel().getColumn(4).setMinWidth(130);
-		table.getColumnModel().getColumn(4).setMaxWidth(130);
-		table.getColumnModel().getColumn(5).setResizable(false);
-		table.getColumnModel().getColumn(6).setResizable(false);
-
-		scrollPane.setViewportView(table);
-	}
+		}
+	};
 }

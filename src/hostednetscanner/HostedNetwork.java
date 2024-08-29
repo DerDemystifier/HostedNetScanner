@@ -267,10 +267,10 @@ public class HostedNetwork extends Network {
 			String newStatus;
 			if (isConnected && isReachable) {
 				newStatus = "online";
-			} else if (isConnected || isReachable) {
-				newStatus = "unconfirmed";
-			} else {
+			} else if (!isConnected) {
 				newStatus = "offline";
+			} else {
+				newStatus = "unconfirmed";
 			}
 
 			if (!newStatus.equals(existingDevice.getStatus())) {
