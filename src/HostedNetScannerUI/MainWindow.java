@@ -31,6 +31,7 @@ import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 import javax.swing.JTable;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 
@@ -259,44 +260,46 @@ public class MainWindow extends JFrame {
 
 		@Override
 		public synchronized void onNetworkUpdated(Set<Device> knownDevices) {
-			DefaultTableModel model = (DefaultTableModel) table.getModel();
-			model.setRowCount(0);
+			SwingUtilities.invokeLater(() -> {
+				DefaultTableModel model = (DefaultTableModel) table.getModel();
+				model.setRowCount(0);
 
-			// Convert to list and sort
-			List<Device> sortedDevices = new ArrayList<>(knownDevices);
-			Collections.sort(sortedDevices, (d1, d2) -> {
-				// Push offline devices last
-				boolean isOffline1 = d1.getStatus().equalsIgnoreCase("offline");
-				boolean isOffline2 = d2.getStatus().equalsIgnoreCase("offline");
-				if (isOffline1 != isOffline2) {
-					return isOffline1 ? 1 : -1;
+				// Convert to list and sort
+				List<Device> sortedDevices = new ArrayList<>(knownDevices);
+				Collections.sort(sortedDevices, (d1, d2) -> {
+					// Push offline devices last
+					boolean isOffline1 = d1.getStatus().equalsIgnoreCase("offline");
+					boolean isOffline2 = d2.getStatus().equalsIgnoreCase("offline");
+					if (isOffline1 != isOffline2) {
+						return isOffline1 ? 1 : -1;
+					}
+
+					// Sort by IP address, using 255.255.255.255 for null addresses
+					return getComparisonIP(d1).compareTo(getComparisonIP(d2));
+				});
+
+				for (Device device : sortedDevices) {
+					// Convert status to appropriate icon
+					ImageIcon statusIcon;
+					switch (device.getStatus().toLowerCase()) {
+					case "online":
+						statusIcon = statusGreen;
+						break;
+					case "unconfirmed":
+						statusIcon = statusYellow;
+						break;
+					case "offline":
+						statusIcon = statusRed;
+						break;
+					default:
+						statusIcon = statusRed;
+					}
+
+					model.addRow(new Object[] { statusIcon, device.getHostname(), device.getCustomName(),
+							device.getMacAddress(), device.getHostAddress(), device.getFormattedConnectionTime(),
+							device.getFormattedLastSeen() });
 				}
-
-				// Sort by IP address, using 255.255.255.255 for null addresses
-				return getComparisonIP(d1).compareTo(getComparisonIP(d2));
 			});
-
-			for (Device device : sortedDevices) {
-				// Convert status to appropriate icon
-				ImageIcon statusIcon;
-				switch (device.getStatus().toLowerCase()) {
-				case "online":
-					statusIcon = statusGreen;
-					break;
-				case "unconfirmed":
-					statusIcon = statusYellow;
-					break;
-				case "offline":
-					statusIcon = statusRed;
-					break;
-				default:
-					statusIcon = statusRed;
-				}
-
-				model.addRow(new Object[] { statusIcon, device.getHostname(), device.getCustomName(),
-						device.getMacAddress(), device.getHostAddress(), device.getFormattedConnectionTime(),
-						device.getFormattedLastSeen() });
-			}
 		}
 
 		private String getComparisonIP(Device device) {
