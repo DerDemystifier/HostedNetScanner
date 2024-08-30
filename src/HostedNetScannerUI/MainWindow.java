@@ -248,7 +248,6 @@ public class MainWindow extends JFrame {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			Logger.logError("Error playing sound: ", e);
 		}
 	}
 
@@ -404,7 +403,9 @@ public class MainWindow extends JFrame {
 				String mac = entry.getKey();
 				String newName = entry.getValue();
 
-				if (!knownDevices.containsKey(mac) || !knownDevices.get(mac).equals(newName)) {
+				// If the device is not known yet OR if there's a name set and that name has changed!
+				if (!knownDevices.containsKey(mac)
+						|| (knownDevices.get(mac) != null && !knownDevices.get(mac).equals(newName))) {
 					knownDevices.put(mac, newName);
 					hasChanges = true;
 				}
