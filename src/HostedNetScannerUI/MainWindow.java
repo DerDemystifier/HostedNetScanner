@@ -322,19 +322,28 @@ public class MainWindow extends JFrame {
 				LocalDateTime now = LocalDateTime.now();
 				DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-				// First write online devices
+				// Write online devices
 				writer.write(now.format(formatter));
 				writer.newLine();
 				writer.write("Online devices:");
 				writer.newLine();
-				knownDevices.stream().filter(d -> "online".equals(d.getStatus()))
-						.forEach(device -> writeDeviceLog(writer, device));
+				knownDevices.stream()
+					.filter(d -> "online".equals(d.getStatus()))
+					.forEach(device -> writeDeviceLog(writer, device));
 
-				// Then write offline/unconfirmed devices
-				writer.write("\nOffline/Unconfirmed devices:");
+				// Write unconfirmed devices
+				writer.write("\nUnconfirmed devices:");
 				writer.newLine();
-				knownDevices.stream().filter(d -> !"online".equals(d.getStatus()))
-						.forEach(device -> writeDeviceLog(writer, device));
+				knownDevices.stream()
+					.filter(d -> "unconfirmed".equals(d.getStatus()))
+					.forEach(device -> writeDeviceLog(writer, device));
+
+				// Write offline devices
+				writer.write("\nOffline devices:");
+				writer.newLine();
+				knownDevices.stream()
+					.filter(d -> "offline".equals(d.getStatus()))
+					.forEach(device -> writeDeviceLog(writer, device));
 
 				writer.flush();
 			} catch (IOException e) {
