@@ -6,6 +6,36 @@ import java.util.prefs.Preferences;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
 
+/**
+ * The ConfigManager class is responsible for managing configuration settings
+ * for the HostedNetScanner application. It uses the Preferences API to store
+ * and retrieve configuration values such as file paths, network credentials,
+ * and other settings.
+ *
+ * Configuration settings are saved in the Windows registry under:
+ * Computer\HKEY_USERS\S-1-5-21-ID\SOFTWARE\JavaSoft\Prefs
+ *
+ * The following configuration keys are used:
+ * - deviceLogFilePath: Path to the device log file.
+ * - knownDevicesFilePath: Path to the known devices file.
+ * - bssidKey: BSSID of the hosted network.
+ * - networkPasswordKey: Password of the hosted network.
+ * - ssidKey: SSID of the hosted network.
+ *
+ * Methods:
+ * - ConfigManager(): Constructor that initializes the preferences node.
+ * - saveDeviceLogFilePath(String key): Saves the device log file path.
+ * - getDeviceLogFilePath(): Retrieves the device log file path.
+ * - saveKnownDevicesFilePath(String key): Saves the known devices file path.
+ * - getKnownDevicesFilePath(): Retrieves the known devices file path.
+ * - saveNetworkPassword(String password): Saves the network password.
+ * - getNetworkPassword(): Retrieves the network password.
+ * - saveSSID(String ssid): Saves the SSID of the hosted network.
+ * - getSSID(): Retrieves the SSID of the hosted network.
+ * - showSaveDialog(Component parentComponent, String dialogTitle, String approveButtonText,
+ *   String initialDirectory, String fileDescription, String[] fileExtensions, String defaultFileName):
+ *   Opens a save dialog and returns the full path of the selected file.
+ */
 public class ConfigManager {
 	// Config saved in Computer\HKEY_USERS\S-1-5-21-ID\SOFTWARE\JavaSoft\Prefs
 	private static final String deviceLogFilePath = "device_log_file_path";

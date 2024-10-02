@@ -10,6 +10,12 @@ import java.util.regex.Pattern;
 
 public class ARPScanner {
 
+	/**
+	 * Executes an ARP scan command based on the operating system and returns the output.
+	 * On Windows, it runs the "arp -a" command, and on Unix-based systems, it runs the "arp -an" command.
+	 *
+	 * @return A string containing the output of the ARP scan command output, or null if an error occurs.
+	 */
 	public static String runARPScan() {
 		try {
 			String command = System.getProperty("os.name").toLowerCase().contains("win") ? "arp -a" : "arp -an";
@@ -110,6 +116,13 @@ public class ARPScanner {
 		return networks;
 	}
 
+	/**
+	 * Parses the ARP output to extract network devices connected to the specified network.
+	 *
+	 * @param network The network object containing the connected interface information.
+	 * @param arpOutput The ARP command output as a string.
+	 * @return A set of Device objects representing the devices found in the ARP output.
+	 */
 	public static Set<Device> parseNetworkDevices(Network network, String arpOutput) {
 		Set<Device> devices = new HashSet<>();
 		String interfaceIPString = network.getConnectedInterface().getIpAddress().getHostAddress();
@@ -150,6 +163,13 @@ public class ARPScanner {
 				.findFirst().orElse(null);
 	}
 
+	/**
+	 * Retrieves the IP address associated with a given MAC address on a specified network.
+	 *
+	 * @param network the network on which to perform the ARP scan
+	 * @param macAddress the MAC address of the device whose IP address is to be found
+	 * @return the IP address of the device with the specified MAC address, or null if not found
+	 */
 	public static InetAddress getIpAddress(Network network, String macAddress) {
 		// Run ARP scan on the specific network
 		String arpScanOutput = runARPScan();
@@ -162,6 +182,16 @@ public class ARPScanner {
 				.map(Device::getIpAddress).orElse(null);
 	}
 
+	/**
+	 * Retrieves the MAC address associated with the given IP address.
+	 *
+	 * This method scans all known devices on the network and attempts to find a device
+	 * with the specified IP address. If a device with the given IP address is found,
+	 * its MAC address is returned. If no such device is found, the method returns null.
+	 *
+	 * @param ipAddress the IP address for which to find the MAC address
+	 * @return the MAC address associated with the given IP address, or null if no such device is found
+	 */
 	public static String getMacAddress(InetAddress ipAddress) {
 		return scanAll().stream().map(Network::getKnownDevices).flatMap(Set::stream)
 				.filter(device -> device.getIpAddress().equals(ipAddress)).findFirst().map(Device::getMacAddress)

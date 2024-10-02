@@ -31,6 +31,18 @@ public class HostedNetwork extends Network {
 		return instance;
 	}
 
+	/**
+	 * Starts the hosted network if it is not already running.
+	 *
+	 * @return The instance of the hosted network if started successfully, otherwise null.
+	 *
+	 * This method initializes the ConfigManager to retrieve the network SSID and password.
+	 * It attempts to start the hosted network up to a maximum of 3 times, with a delay of 500 milliseconds between attempts.
+	 * If the SSID is null or empty, the method returns null.
+	 * If an exception occurs during the process, it logs the error and returns null.
+	 *
+	 * @throws InterruptedException If the thread is interrupted while sleeping between retry attempts.
+	 */
 	public static Network startNetwork() {
 		if (instance != null) {
 			return getInstance();
@@ -188,7 +200,12 @@ public class HostedNetwork extends Network {
 		return false;
 	}
 
-	// Parse connected clients from netsh command
+	/**
+	 * Retrieves the set of devices currently connected to the hosted network.
+	 *
+	 * @return a set of {@link Device} objects representing the connected devices.
+	 * @throws IOException if an I/O error occurs while executing the command or reading the output.
+	 */
 	public Set<Device> getConnectedDevices() throws IOException {
 		Set<Device> devices = new HashSet<>();
 		Process process = Runtime.getRuntime().exec("netsh wlan show hostednetwork");
@@ -221,6 +238,21 @@ public class HostedNetwork extends Network {
 		return devices;
 	}
 
+	/**
+	 * Updates the list of connected devices and their statuses.
+	 *
+	 * This method performs the following steps:
+	 * 1. Retrieves the currently connected devices.
+	 * 2. Determines the reachable devices based on the known devices.
+	 * 3. Updates the status of existing known devices based on their connectivity and reachability.
+	 * 4. Adds any new connected devices to the network's known devices list.
+	 * 5. Performs hostname lookups for new devices asynchronously.
+	 * 6. Notifies listeners if there are any changes in the network.
+	 * 7. Rechecks custom names and notifies listeners if necessary.
+	 *
+	 * Exceptions:
+	 * - IOException: If there is an error retrieving connected or reachable devices.
+	 */
 	@Override
 	public void updateConnectedDevices() {
 		Set<Device> connectedDevices = null;
@@ -339,6 +371,12 @@ public class HostedNetwork extends Network {
 		}, 0, 2, TimeUnit.SECONDS);
 	}
 
+	/**
+	 * Rechecks and updates the custom names of known devices based on a predefined map of known peers.
+	 *
+	 * @return {@code true} if any device's custom name was changed, {@code false} otherwise.
+	 * @throws IOException if an I/O error occurs while loading the known peers.
+	 */
 	private boolean recheckCustomNames() throws IOException {
 		boolean changed = false;
 		Map<String, String> knownDevicesMap = loadKnownPeers();
@@ -352,6 +390,13 @@ public class HostedNetwork extends Network {
 		return changed;
 	}
 
+	/**
+	 * Refreshes the network data by re-scanning network interfaces to get updated
+	 * information. It updates the connected interface with new information if the
+	 * MAC address matches the hosted network's MAC address. Additionally, it clears
+	 * the current known devices to force a full refresh and forces an immediate
+	 * update of connected devices.
+	 */
 	public void refreshData() {
 		// Re-scan network interfaces to get updated information
 		List<Network> allNetworks = IPConfigScanner.scanNetworks();

@@ -1,5 +1,9 @@
 # Ignored files
-*.ignore.*
+*-ignore-*
+PROCESS.txt
+devicesStatus.txt
+knownDevices.txt
+
 
 # Eclipse specific files
 /.settings/
