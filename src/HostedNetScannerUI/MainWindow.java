@@ -239,7 +239,7 @@ public class MainWindow extends JFrame {
 
 	private void playDingSound() {
 		try {
-			File soundFile = new File(System.getProperty("user.dir") + "/ding.wav");
+			File soundFile = new File(System.getProperty("user.dir") + "/assets/ding.wav");
 			if (soundFile.exists()) {
 				AudioInputStream audioIn = AudioSystem.getAudioInputStream(soundFile);
 				Clip clip = AudioSystem.getClip();
